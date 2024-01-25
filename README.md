@@ -9,7 +9,7 @@ Genomic analyses of stripe in Timema cristinae with a focus on structural variat
 
 # Tests of admixture and introgression
 
-We wanted to know whether the stripe translocation introgressed from another species. We used previously published whole genome sequence data for this. This includes whole genomes from 20 *T. californicum* (SM), 20 *T. chumash* (BS), 20 *T. curi* (CR), 16 *T. knulli* (BCTUR), 19 *T. landelsensis* (BCBOG), 19 *T. poppensis* (SM), 20 *T. cristinae* from Hwy154 (HVA), and 21 *T. cristinae* from Refugio (R12A). 
+We wanted to know whether the stripe translocation introgressed from another species. We used previously published whole genome sequence data for this. This includes whole genomes from 20 *T. californicum* (SM), 20 *T. chumash* (BS), 20 *T. curi* (CR), 16 *T. knulli* (BCTUR), 19 *T. landelsensis* (BCBOG), 19 *T. poppensis* (SM), 20 *T. cristinae* from Hwy154 (HVA), and 21 *T. cristinae* from Refugio (R12A) (155 total). 
 
 First, the DNA fastq data were aligned to the Refugio striped genome haplotype 1.
 
@@ -105,6 +105,211 @@ $pm->wait_all_children;
 ```
 
 All alignments used `bwa mem` version (0.7.17-r1198-dirty).
+
+The alignments were then compressed, sorted and indexed with `samtools` (version 1.16):
+
+```bash
+#!/bin/sh
+#SBATCH --time=48:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=16
+#SBATCH --account=gompert-np
+#SBATCH --partition=gompert-np
+#SBATCH --job-name=sam2bam
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load samtools
+## samtools 1.16
+
+cd /scratch/general/nfs1/u6000989/timema_wgs_abba_baba
+perl Sam2BamFork.pl *sam
+```
+
+```perl
+#!/usr/bin/perl
+#
+# conver sam to bam, then sort and index 
+#
+
+
+use Parallel::ForkManager;
+my $max = 48;
+my $pm = Parallel::ForkManager->new($max);
+
+FILES:
+foreach $sam (@ARGV){
+	$pm->start and next FILES; ## fork
+	$sam =~ m/^([A-Za-z0-9_\-]+\.)sam/ or die "failed to match $sam\n";
+	$base = $1;
+	system "samtools view -b -O BAM -o $base"."bam $sam\n";
+        system "samtools sort -O BAM -o $base"."sorted.bam $base"."bam\n";
+        system "samtools index -b $base"."sorted.bam\n";
+        $pm->finish;
+}
+
+$pm->wait_all_children;
+```
+
+Next, PCR duplicates were masked and removed with `samtools` (version 1.16):
+
+```bash
+#!/bin/sh
+#SBATCH --time=240:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=20
+#SBATCH --account=gompert-np
+#SBATCH --partition=gompert-np
+#SBATCH --job-name=dedup
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load samtools
+##Version: 1.16 (using htslib 1.16)
+
+cd /scratch/general/nfs1/u6000989/timema_wgs_abba_baba
+perl RemoveDupsFork.pl *bam
+```
+
+```perl
+#!/usr/bin/perl
+#
+# PCR duplicate removal with samtools
+#
+
+
+use Parallel::ForkManager;
+my $max = 40;
+my $pm = Parallel::ForkManager->new($max);
+
+FILES:
+foreach $bam (@ARGV){
+	$pm->start and next FILES; ## fork
+	$bam =~ m/^([A-Za-z0-9_]+)/ or die "failed to match $bam\n";
+	$base = $1;
+	system "samtools collate -o co_$base.bam $bam /scratch/general/nfs1/u6000989/timema_wgs_abba_baba/Dedup/t$bam\n";
+	system "samtools fixmate -m co_$base.bam fix_$base.bam\n";
+	system "samtools sort -o sort_$base.bam fix_$base.bam\n";
+	## using default definition of dups
+	## measure positions based on template start/end (default). = -m t
+	system "samtools markdup -T /scratch/general/nfs1/u6000989/timema_wgs_abba_baba/Dedup/ -r sort_$base.bam dedup_$base.bam\n";
+	$pm->finish;
+}
+
+$pm->wait_all_children;
+```
+
+For the non *T. cristinae*, alignments for each individual were spread over multiple (4) bam files. These were merged with `samtools` (version 1.16):
+
+```perl
+#!/usr/bin/perl
+#
+# merge bam alignments for each individual 
+#
+
+
+use Parallel::ForkManager;
+my $max = 48;
+my $pm = Parallel::ForkManager->new($max);
+
+FILES:
+foreach $file (@ARGV){
+        $pm->start and next FILES; ## fork
+        system "samtools merge -r -c -p -b $file -O BAM $file.bam\n";        
+        system "samtools sort -O BAM -o $file.sorted.bam $file.bam\n";
+        system "samtools index $file.sorted.bam\n";
+        $pm->finish;
+}
+
+$pm->wait_all_children;
+```
+
+Variants were then called with `bcftools` (version 1.16) call. This was done in parallel for each of the 13 chromosomes:
+
+```bash
+#!/bin/sh
+#SBATCH --time=120:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=24
+#SBATCH --account=gompert-np
+#SBATCH --partition=gompert-np
+#SBATCH --job-name=bcf_call
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+
+module load samtools
+## version 1.16
+module load bcftools
+## version 1.16
+
+cd /scratch/general/nfs1/u6000989/timema_wgs_abba_baba
+
+perl BcfForkLg.pl chrom*list 
+```
+
+```perl
+#!/usr/bin/perl
+#
+# samtools/bcftools variant calling by LG 
+#
+
+
+use Parallel::ForkManager;
+my $max = 20;
+my $pm = Parallel::ForkManager->new($max);
+
+my $genome = "/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap1/ojincantatabio-cen4122-hap1-mb-hirise-g4hzf__08-10-2023__final_assembly.fasta";
+
+
+foreach $chrom (@ARGV){
+	$pm->start and next; ## fork
+        $chrom =~ /chrom([0-9\.]+)/ or die "failed here: $chrom\n";
+	$out = "o_timema_chrom$1";
+	system "bcftools mpileup -b bams -d 1000 -f $genome -R $chrom -a FORMAT/DP,FORMAT/AD -q 20 -Q 30 -I -Ou | bcftools call -v -c -p 0.01 -Ov -o $out"."vcf\n";
+
+	$pm->finish;
+}
+
+$pm->wait_all_children;
+
+```
+
+Variants were filtered with `GATK` (version 4.1.4.1) based on depth (1.5X per individual, or 233X total) and  mapping quality (30):
+
+```perl
+#!/usr/bin/perl
+#
+# filter vcf files 
+#
+
+
+use Parallel::ForkManager;
+my $max = 48;
+my $pm = Parallel::ForkManager->new($max);
+
+
+foreach $vcf (@ARGV){
+	$pm->start and next; ## fork
+	$o = $vcf;
+	$o =~ s/o_// or die "failed sub $vcf\n";
+	system "bgzip $vcf\n";
+	system "tabix $vcf.gz\n";
+	system "java -jar /uufs/chpc.utah.edu/sys/installdir/gatk/gatk-4.1.4.1/gatk-package-4.1.4.1-local.jar IndexFeatureFile -I $vcf.gz\n";
+	system "java -jar /uufs/chpc.utah.edu/sys/installdir/gatk/gatk-4.1.4.1/gatk-package-4.1.4.1-local.jar VariantFiltration -R /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap1/ojincantatabio-cen4122-hap1-mb-hirise-g4hzf__08-10-2023__final_assembly.fasta -V $vcf.gz -O filt_$o.gz --filter-name \"depth\" --filter-expression \"DP < 233\" --filter-name \"mapping\" --filter-expression \"MQ < 30\"\n";
+	system "bgzip -d filt_$o.gz\n";
+
+	$pm->finish;
+
+}
+
+$pm->wait_all_children;
+```
+```bash
+## keeps biallelic SNPs that passed the above depth and mapping filters
+grep ^Sc filt_o_timema1.vcf | grep PASS | grep -v [ATCG],[ATCG] > clean_o_timema1.vcf"
+```
+
 
 # GWA of stripe
 
