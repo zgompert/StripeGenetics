@@ -7,6 +7,10 @@ Genomic analyses of stripe in Timema cristinae with a focus on structural variat
 
 # Demographic inference
 
+# Tests of admixture and introgression
+
+We wanted to know whether the stripe translocation introgressed from another species. We used previously published whole genome sequence data for this. This includes whole genomes from 80 *T. californicum* (), 80 *T. chumash* (), 80 *T. curi*, 64 *T. knulli*, 76 *T. landelsensis*, 76 *T. poppensis*, 20 *T. cristinae* from Hwy154 (HVA), and 21 *T. cristinae* from Refugio (R12A). 
+
 # GWA of stripe
 
 # Cline analyses
