@@ -9,7 +9,102 @@ Genomic analyses of stripe in Timema cristinae with a focus on structural variat
 
 # Tests of admixture and introgression
 
-We wanted to know whether the stripe translocation introgressed from another species. We used previously published whole genome sequence data for this. This includes whole genomes from 80 *T. californicum* (), 80 *T. chumash* (), 80 *T. curi*, 64 *T. knulli*, 76 *T. landelsensis*, 76 *T. poppensis*, 20 *T. cristinae* from Hwy154 (HVA), and 21 *T. cristinae* from Refugio (R12A). 
+We wanted to know whether the stripe translocation introgressed from another species. We used previously published whole genome sequence data for this. This includes whole genomes from 20 *T. californicum* (SM), 20 *T. chumash* (BS), 20 *T. curi* (CR), 16 *T. knulli* (BCTUR), 19 *T. landelsensis* (BCBOG), 19 *T. poppensis* (SM), 20 *T. cristinae* from Hwy154 (HVA), and 21 *T. cristinae* from Refugio (R12A). 
+
+First, the DNA fastq data were aligned to the Refugio striped genome haplotype 1.
+
+```bash
+#!/bin/sh
+#SBATCH --time=96:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=16
+#SBATCH --account=gompert-np
+#SBATCH --partition=gompert-np
+#SBATCH --job-name=bwa-tcr
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load bwa 
+
+cd /scratch/general/nfs1/u6000989/timema_wgs_abba_baba
+## for cristinae
+perl BwaAlignWgsFork.pl tcr_R12A*_1.fq
+## for others
+perl BwaAlignWgsFork2.pl 
+```
+The alignment script for *T. cristinae* (working form fq files directly) `BwaAlignWgsFork.pl`:
+
+```perl
+#!/usr/bin/perl
+#
+# alignment with bwa
+#
+
+
+use Parallel::ForkManager;
+my $max = 24;
+my $pm = Parallel::ForkManager->new($max);
+
+my $genome = "/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap1/ojincantatabio-cen4122-hap1-mb-hirise-g4hzf__08-10-2023__final_assembly.fasta";
+
+foreach $file1 (@ARGV){
+	$pm->start and next; ## fork
+	$file2 = $file1;
+	$file2 =~ s/_1\.fq/_2.fq/ or die "failed file sub\n";
+ 	$file1 =~ m/^tcr_([A-Z0-9]+_\d+)/ or die "failed id match\n";
+	$id = $1;
+   
+        
+	system "bwa mem -t 1 -M -r 1.3 -k 19 -R \'\@RG\\tID:tcr-"."$id\\tPL:ILLUMINA\\tLB:tcr-"."$id\\tSM:tcr-"."$id"."\' -o $id".".sam $genome $file1 $file2\n";
+
+	$pm->finish;
+}
+
+$pm->wait_all_children;
+```
+
+For the others, working from zipped files `BwaAlignWgsFork2.pl`: 
+
+```perl
+#!/usr/bin/perl
+#
+# bwa mem
+#
+
+
+use Parallel::ForkManager;
+my $max = 24;
+my $pm = Parallel::ForkManager->new($max);
+
+
+my $genome = "/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap1/ojincantatabio-cen4122-hap1-mb-hirise-g4hzf__08-10-2023__final_assembly.fasta";
+
+open(IN,"fqA_1.txt");
+while(<IN>){
+    $pm->start and next; ## fork
+    chomp;
+    $file1 = $_;
+    $file2 = $file1;
+    $file2 =~ s/_1\.fa/_2.fa/ or die "failed file sub\n";
+    $file1 =~ m/fq\/([a-z]+_[A-Z]+_[A-Z]+_moe[a-zA-Z0-9]+_WTCHG_\d+)/ or die "failed id match\n";
+    $id = $1;
+   
+    $fq1 = $file1;
+    $fq2 = $file2;
+    $fq1 = "t$id"."_1.fq";
+    $fq2 = "t$id"."_2.fq";
+    system "gunzip --stdout $file1 > $fq1\n";
+    system "gunzip --stdout $file2 > $fq2\n";
+    	
+    system "bwa mem -t 1 -M -r 1.3 -k 19 -R \'\@RG\\tID:t"."$id\\tPL:ILLUMINA\\tLB:t"."$id\\tSM:t"."$id"."\' -o t$id".".sam $genome $fq1 $fq2\n";
+    $pm->finish;
+}
+ 
+
+$pm->wait_all_children;
+```
+
+All alignments used `bwa mem` version (0.7.17-r1198-dirty).
 
 # GWA of stripe
 
