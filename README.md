@@ -75,6 +75,52 @@ cactus jobStoreGSR2_GUSR1 /uufs/chpc.utah.edu/common/home/gompert-group4/data/ti
 cactus jobStoreGSR1_GSM /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/comp_aligns/cactusStripe_TcrGSR1_TcrMainGS.txt cactusTcrGSR1_TcrGS.hal --maxCores 80 
 cactus jobStoreGUSR1_GUSM /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/comp_aligns/cactusStripe_TcrGUSR1_TcrMainGUS.txt cactusTcrGUSR1_TcrGUS.hal --maxCores 80 
 ```
+Next, we used `halSyntency` to extract synteny blocks from the genom alignments.
+
+```{bash}
+#!/bin/sh 
+#SBATCH --time=336:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=24
+#SBATCH --account=gompert-np
+#SBATCH --partition=gompert-np
+#SBATCH --job-name=cactus-syn
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+cd /scratch/general/nfs1/cactusNp
+
+perl forkHal.pl *hal
+```
+
+```{perl}
+#!/usr/bin/perl
+#
+# hal syntency batch run 
+#
+
+
+use Parallel::ForkManager;
+my $max = 10;
+my $pm = Parallel::ForkManager->new($max);
+
+
+@target = ("t_cris_r_gs1","t_cris_r_gs1","t_cris_r_gs1","t_cris_r_gs1","t_cris_r_gs2","t_cris_r_gs2","t_cris_r_gus1","t_cris_r_gus1");
+@query = ("t_cris_gs","t_cris_r_gs2","t_cris_r_gus1","t_cris_r_gus2","t_cris_r_gus1","t_cris_r_gus2","t_cris_gus","t_cris_r_gus2");
+
+foreach $hal (@ARGV){
+	$g1 = shift(@target);
+	$g2 = shift(@query);
+	$pm->start and next;
+	$out = "out_$hal";
+	$out =~ s/hal/psl/ or die;
+	system "~/source/hal/bin/halSynteny --queryGenome $g2 --targetGenome $g1 $hal $out\n"; 
+	$pm->finish;
+}
+
+
+$pm->wait_all_children;
+```
 
 We then made synteny and alignment plots in R, see [SynPlotsRefugio.R](https://github.com/zgompert/StripeGenetics/blob/main/SynPlotsRefugioPlus.R).
 
