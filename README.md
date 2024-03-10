@@ -47,6 +47,34 @@ RepeatMasker -s -e ncbi -xsmall -pa 24 -lib RepeatLibMergeCentroidsRM.lib /uufs/
 ```
 
 # Comparative alignments
+We used `cactus` for align the new genomes to each other and to our existing striped and green genomes (Hi-C/Omni-C, but not phased, from Hwy154).
+
+```{bash}
+#!/bin/sh 
+#SBATCH --time=120:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=24
+#SBATCH --account=gompert-kp
+#SBATCH --partition=gompert-kp
+#SBATCH --job-name=cactus-master
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+cd /scratch/general/nfs1/cactusNp
+
+module load cactus
+
+cactus jobStoreGUSR1_GUSR2 /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/comp_aligns/cactusStripe_TcrGUSR1_TcrGUS2.txt cactusTcrGUSR1_TcrGUSR2.hal --maxCores 80 
+cactus jobStoreGSR1_GSR2 /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/comp_aligns/cactusStripe_TcrGSR1_TcrGS2.txt cactusTcrGSR1_TcrGSR2.hal --maxCores 80 
+
+cactus jobStoreGSR1_GUSR1 /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/comp_aligns/cactusStripe_TcrGSR1_TcrGUS1.txt cactusTcrGSR1_TcrGUSR1.hal --maxCores 80 
+cactus jobStoreGSR1_GUSR2 /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/comp_aligns/cactusStripe_TcrGSR1_TcrGUS2.txt cactusTcrGSR1_TcrGUSR2.hal --maxCores 80 
+cactus jobStoreGSR2_GUSR2 /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/comp_aligns/cactusStripe_TcrGSR2_TcrGUS2.txt cactusTcrGSR2_TcrGUSR2.hal --maxCores 80 
+cactus jobStoreGSR2_GUSR1 /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/comp_aligns/cactusStripe_TcrGSR2_TcrGUS1.txt cactusTcrGSR2_TcrGUSR1.hal --maxCores 80 
+
+cactus jobStoreGSR1_GSM /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/comp_aligns/cactusStripe_TcrGSR1_TcrMainGS.txt cactusTcrGSR1_TcrGS.hal --maxCores 80 
+cactus jobStoreGUSR1_GUSM /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/comp_aligns/cactusStripe_TcrGUSR1_TcrMainGUS.txt cactusTcrGUSR1_TcrGUS.hal --maxCores 80 
+```
 
 We then made synteny and alignment plots in R, see [SynPlotsRefugio.R](https://github.com/zgompert/StripeGenetics/blob/main/SynPlotsRefugioPlus.R).
 
