@@ -19,7 +19,7 @@ Haplotype 1: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_gen
 
 Haplotype 2: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_green/HiRise/hap2`
 
-We used RepeatMasker (version xxx) and the *T. cristinae* repeat library to mask repeates for each genome.
+We used RepeatMasker (version 4.0.7) and the *T. cristinae* repeat library to mask repeates for each genome.
 
 ```{bash}
 #!/bin/sh 
