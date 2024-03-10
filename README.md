@@ -5,6 +5,8 @@ Genomic analyses of color-pattern in *Timema cristinae* with a focus on structur
 
 # Comparative alignments
 
+We then made synteny and alignment plots in R, see [SynPlotsRefugio.R](SynPlotsRefugio.R).
+
 # Demographic inference
 
 # Tests of admixture and introgression
