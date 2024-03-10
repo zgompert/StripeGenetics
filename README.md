@@ -126,6 +126,49 @@ We then made synteny and alignment plots in R, see [SynPlotsRefugio.R](https://g
 
 # Demographic inference
 
+We used `moments` to fit and compare four historical demographic models for *T. cristinae* Refugio versus Hwy 154.
+
+```{bash}
+#!/bin/sh 
+#SBATCH --time=240:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=20
+#SBATCH --account=wolf-kp
+#SBATCH --partition=wolf-kp
+#SBATCH --job-name=momments
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load miniconda3/latest
+
+cd /uufs/chpc.utah.edu/common/home/gompert-group4/projects/timema_SV_balance/demog
+
+max=16
+count=0
+
+for mfile in *m_sub_mom*py;
+do
+    python3 ${mfile} &
+    ((count++))
+
+    if ((count >= max)); then
+        wait -n
+        ((count--))
+    fi
+done
+
+wait
+```
+
+[Strict isolation = SI](https://github.com/zgompert/StripeGenetics/blob/main/si_sub_moments.py)
+
+[Isolation-with-migration = IM](https://github.com/zgompert/StripeGenetics/blob/main/im_sub_moments.py)
+
+[Ancient migration = AM](https://github.com/zgompert/StripeGenetics/blob/main/am_sub_moments.py)
+
+[Secondary contact = SC](https://github.com/zgompert/StripeGenetics/blob/main/sc_sub_moments.py)
+
+
 # Tests of admixture and introgression
 
 We wanted to know whether the stripe translocation introgressed from another species. We used previously published whole genome sequence data for this. This includes whole genomes from 20 *T. californicum* (SM), 20 *T. chumash* (BS), 20 *T. curi* (CR), 16 *T. knulli* (BCTUR), 19 *T. landelsensis* (BCBOG), 19 *T. poppensis* (SM), 20 *T. cristinae* from Hwy154 (HVA), and 21 *T. cristinae* from Refugio (R12A) (155 total). 
