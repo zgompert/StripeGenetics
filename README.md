@@ -7,10 +7,17 @@ We have two new pairs of phased genomes for *T. cristinae*. Both are from Refugi
 
 The data are here:
 
-Refugio striped (CEN4122) (report)
+Refugio striped (CEN4122) [report](https://github.com/zgompert/StripeGenetics/blob/main/CEN4122_report.html)
+
 Haplotype 1: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap1`
+
 Haplotype 2: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap2`
 
+Refugio green (CEN4120) [report](https://github.com/zgompert/StripeGenetics/blob/main/CEN4120_report.html)
+
+Haplotype 1: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_green/HiRise/hap1`
+
+Haplotype 2: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_green/HiRise/hap2`
 
 
 # Comparative alignments
