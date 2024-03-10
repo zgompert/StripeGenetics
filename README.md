@@ -3,6 +3,16 @@ Genomic analyses of color-pattern in *Timema cristinae* with a focus on structur
 
 # Genomes
 
+We have two new pairs of phased genomes for *T. cristinae*. Both are from Refugio, one is for a striped morph and one is for a green (unstriped) morph. This were both generated from PacBio data combined with Illumina/Omni-C.
+
+The data are here:
+
+Refugio striped (CEN4122) (report)
+Haplotype 1: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap1`
+Haplotype 2: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap2`
+
+
+
 # Comparative alignments
 
 We then made synteny and alignment plots in R, see [SynPlotsRefugio.R](https://github.com/zgompert/StripeGenetics/blob/main/SynPlotsRefugioPlus.R).
