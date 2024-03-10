@@ -1,5 +1,5 @@
 # StripeGenetics
-Genomic analyses of stripe in Timema cristinae with a focus on structural variation
+Genomic analyses of color-pattern in *Timema cristinae* with a focus on structural variation and Refugio
 
 # Genomes
 
