@@ -475,7 +475,52 @@ grep ^Sc filt_o_timema1.vcf | grep PASS | grep -v [ATCG],[ATCG] > clean_o_timema
 
 # GWA of stripe
 
-I prepared the phenotypic data for mapping with [FormatPheno.R](FormatPheno.R).
+Next, I used `entropy` (version 1.2) to estimate genotypes. This was done with each genome and with 2 or 3 source populations (5 chains each). Initial values for MCMC were generated with [initq.R](initq.R), based on simple genotype point estimates from [gl2genest.pl](gl2genest.pl) and [runEstP.pl](runEstP.pl).
+
+```bash
+#!/bin/sh 
+#SBATCH --time=240:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=18
+#SBATCH --account=gompert-np
+#SBATCH --partition=gompert-np
+#SBATCH --job-name=entropy
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module purge
+module load gcc/8.5.0 hdf5/1.10.7
+
+## entropy 1.2
+#~/bin/entropy
+
+cd /uufs/chpc.utah.edu/common/home/gompert-group4/projects/timema_SV_balance/gen_refugio
+perl forkEntropy.pl
+```
+```perl
+#!/usr/bin/perl
+# fork script for entropy 
+
+use Parallel::ForkManager;
+my $max = 30;
+my $pm = Parallel::ForkManager->new($max);
+
+
+foreach $k (2..3){
+	foreach $ch (0..4){ 
+		foreach $g ("gs","gus"){
+			sleep 2;
+			$pm->start and next;
+			$out = "out_$g"."_k$k"."_ch$ch".".hdf5";
+			system "entropy -i filtered_tcr_refugio_variants_$g".".gl -w 0 -m 1 -l 2000 -b 1000 -t 5 -k $k -o $out -q $g"."_ldak$k".".txt -s 20\n";
+			$pm->finish;
+		}
+	}
+}
+$pm->wait_all_children;
+```
+
+I prepared the genotypic and phenotypic data for mapping with [FormatGeno.pl](FormatGeno.pl) and [FormatPheno.R](FormatPheno.R), respectively.
 
 I used the LMM in gemma (version 0.95a) for genome-wide association mapping of stripe (and color) using haplotype 1 from both the green and striped genomes and with and without including chromosome 8 for the kinship matrix. Here are the full set of commands I used:
 
