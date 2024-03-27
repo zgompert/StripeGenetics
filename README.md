@@ -475,6 +475,117 @@ grep ^Sc filt_o_timema1.vcf | grep PASS | grep -v [ATCG],[ATCG] > clean_o_timema
 
 # GWA of stripe
 
+We conducted a GWA mapping analysis based on 238 *T. cristinae* from Refugio (all collected in 2016). The fastq files are in `/uufs/chpc.utah.edu/common/home/gompert-group3/data/timema_clines_rw_SV/reads_refugio`. 
+
+We aligned these data to haplotype 1 of both the green and striped genome from Refugio using `bwa` (version 0.7.17-r1198-dirty).
+
+```perl
+#!/usr/bin/perl
+#
+# alignment with bwa
+#
+
+use Parallel::ForkManager;
+my $max = 24;
+my $pm = Parallel::ForkManager->new($max);
+
+## green refugio hap 1
+#my $genome = "/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_green/HiRise/hap1/ojincantatabio-cen4120-hap1-mb-hirise-wlbll__08-15-2023__final_assembly.fasta";
+
+## stripe refugio hap 1
+my $genome = "/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap1/ojincantatabio-cen4122-hap1-mb-hirise-g4hzf__08-10-2023__final_assembly.fasta";
+
+FILES:
+foreach $fq (@ARGV){
+        $pm->start and next FILES; ## fork
+        if ($fq =~ m/(16_[a-zA-Z0-9_]+)/){
+                $ind = $1;
+        }
+        else {
+                die "Failed to match $file\n";
+        }
+        system "bwa aln -n 4 -l 20 -k 2 -t 1 -q 10 -f aln"."$ind".".sai $genome $fq\n";
+        system "bwa samse -n 1 -r \'\@RG\\tID:tcr-"."$ind\\tPL:ILLUMINA\\tLB:tcr-"."$ind\\tSM:tcr-"."$ind"."\' -f aln"."$ind".".sam $genome aln"."$ind".".sai $fq\n";
+        $pm->finish;
+}
+
+$pm->wait_all_children;
+
+```
+We then  compressed, sorted and indexed the alignment files with `samtools` (version 1.16). Here is the version for the striped genome (green is bascially the same thing).
+
+```bash
+#!/bin/sh
+#SBATCH --time=48:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=16
+#SBATCH --account=gompert
+#SBATCH --partition=notchpeak
+#SBATCH --job-name=sam2bam
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load samtools
+## samtools 1.16
+
+cd /uufs/chpc.utah.edu/common/home/gompert-group3/data/timema_clines_rw_SV/align_refugio_gs
+perl Sam2BamFork.pl *sam
+
+```
+
+```perl
+#!/usr/bin/perl
+#
+# conver sam to bam, then sort and index 
+#
+
+
+use Parallel::ForkManager;
+my $max = 16;
+my $pm = Parallel::ForkManager->new($max);
+
+FILES:
+foreach $sam (@ARGV){
+	$pm->start and next FILES; ## fork
+	$sam =~ m/^([A-Za-z0-9_\-]+\.)sam/ or die "failed to match $fq\n";
+	$base = $1;
+	system "samtools view -b -O BAM -o $base"."bam $sam\n";
+        system "samtools sort -O BAM -o $base"."sorted.bam $base"."bam\n";
+        system "samtools index -b $base"."sorted.bam\n";
+        $pm->finish;
+}
+
+$pm->wait_all_children;
+
+````
+
+We then used `samtools` and `bcftools` (version 1.16 for both) for variant calling (again with each genome).
+
+```bash
+#!/bin/sh 
+#SBATCH --time=196:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=12
+#SBATCH --account=wolf-kp
+#SBATCH --partition=wolf-kp
+#SBATCH --job-name=bcfCall
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load bcftools
+module load samtools
+## bcftools 1.16
+## samtools 1.16
+
+
+cd /uufs/chpc.utah.edu/common/home/gompert-group3/data/timema_clines_rw_SV/align_refugio_gs
+
+## index genome just needs to be done once
+#samtools faidx /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap1/ojincantatabio-cen4122-hap1-mb-hirise-g4hzf__08-10-2023__final_assembly.fasta
+
+bcftools mpileup -b bams -C 50 -d 500 -f /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap1/ojincantatabio-cen4122-hap1-mb-hirise-g4hzf__08-10-2023__final_assembly.fasta -q 20 -Q 30 -I -Ou -a DP,AD,ADF,ADR | bcftools call -v -c -p 0.01 -P 0.001 -O v -o tcr_refugio_variants_gs.vcf 
+```
+ 
 Next, I used `entropy` (version 1.2) to estimate genotypes. This was done with each genome and with 2 or 3 source populations (5 chains each). Initial values for MCMC were generated with [initq.R](initq.R), based on simple genotype point estimates from [gl2genest.pl](gl2genest.pl) and [runEstP.pl](runEstP.pl).
 
 ```bash
