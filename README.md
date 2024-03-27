@@ -585,7 +585,259 @@ cd /uufs/chpc.utah.edu/common/home/gompert-group3/data/timema_clines_rw_SV/align
 
 bcftools mpileup -b bams -C 50 -d 500 -f /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap1/ojincantatabio-cen4122-hap1-mb-hirise-g4hzf__08-10-2023__final_assembly.fasta -q 20 -Q 30 -I -Ou -a DP,AD,ADF,ADR | bcftools call -v -c -p 0.01 -P 0.001 -O v -o tcr_refugio_variants_gs.vcf 
 ```
-I used our standard perl scripts (vcfFilter.pl) for filtering the vcf files. The one for the striped genome is 
+I used our standard perl scripts (vcfFilter.pl) for filtering the vcf files. The one for the striped genome is. 
+
+```perl
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+
+# this program filters a vcf file based on overall sequence coverage, number of non-reference reads, number of alleles, and reverse orientation reads
+
+# usage vcfFilter.pl infile.vcf
+#
+# change the marked variables below to adjust settings
+#
+
+#### stringency variables, edits as desired
+## 238 inds, 2x
+my $minCoverage = 476; # minimum number of sequences; DP
+my $minAltRds = 10; # minimum number of sequences with the alternative allele; AC
+my $notFixed = 1.0; # removes loci fixed for alt; AF
+my $bqrs = 0.005; # p-value base quality rank sum test; BaseQRankSum
+my $mqrs = 0.005; # p-value mapping quality rank sum test; MQRankSum
+my $rprs = 0.005; # p-value read position rank sum test; ReadPosRankSum
+my $qd = 2; # minimum ratio of variant confidenct to non reference read depth; QD
+my $mq = 30; # minimum mapping quality; MQ
+my $miss = 47; # maximum number of individuals with no data
+##### this set is for GBS
+my $d;
+
+my @line;
+
+my $in = shift(@ARGV);
+open (IN, $in) or die "Could not read the infile = $in\n";
+$in =~ m/^([a-zA-Z_0-9\-]+\.vcf)$/ or die "Failed to match the variant file\n";
+open (OUT, "> filtered2x_$1") or die "Could not write the outfile\n";
+
+my $flag = 0;
+my $cnt = 0;
+
+while (<IN>){
+        chomp;
+        $flag = 1;
+        if (m/^\#/){ ## header row, always write
+                $flag = 1;
+        }
+        elsif (m/^Sc/){ ## this is a sequence line, you migh need to edit this reg. expr.
+                $flag = 1;
+                $d = () = (m/\d\/\d:0,0,0:0/g); ## for bcftools call
+                if ($d >= $miss){
+                        $flag = 0;
+                        ##print "fail missing : ";
+                }
+                if (m/[ACTGN]\,[ACTGN]/){ ## two alternative alleles identified
+                        $flag = 0;
+                        #print "fail allele : ";
+                }
+                @line = split(/\s+/,$_);
+                if(length($line[3]) > 1 or length($line[4]) > 1){
+                        $flag = 0;
+                        #print "fail INDEL : ";
+                }
+                m/DP=(\d+)/ or die "Syntax error, DP not found\n";
+                if ($1 < $minCoverage){
+                        $flag = 0;
+                        #print "fail DP : ";
+               }
+## bcftools call version
+
+                m/DP4=\d+,\d+,(\d+),(\d+)/ or die "Syntax error DP4 not found\n";
+                if(($1 + $2) < $minAltRds){
+                        $flag = 0;
+                }
+                m/AF1*=([0-9\.e\-]+)/ or die "Syntax error, AF not found\n";
+                if ($1 == $notFixed){
+                        $flag = 0;
+                #       print "fail AF : ";
+                }
+
+## bcftools call verions, these are p-values, use 0.01
+                if(m/BQB=([0-9e\-\.]*)/){
+                        if ($1 < 0.005){
+                                $flag = 0;
+#                               print "fail BQRS : ";
+                        }
+                }
+                if(m/MQB=([0-9e\-\.]*)/){
+                        if ($1 < 0.005){
+                                $flag = 0;
+#                               print "fail MQRS : ";
+                        }
+                }
+                if(m/RPB=([0-9e\-\.]*)/){
+                        if ($1 < 0.005){
+                                $flag = 0;
+#                               print "fail RPRS : ";
+                        }
+                }
+                if(m/MQ=([0-9\.]+)/){
+                        if ($1 < $mq){
+                                $flag = 0;
+#                               print "fail MQ : ";
+                        }
+                }
+                else{
+                        $flag = 0;
+                        print "faile no MQ : ";
+                }
+                if ($flag == 1){
+                        $cnt++; ## this is a good SNV
+                }
+        }
+        else{
+                print "Warning, failed to match the chromosome or scaffold name regular expression for this line\n$_\n";
+                $flag = 0;
+        }
+        if ($flag == 1){
+                print OUT "$_\n";
+        }
+}
+close (IN);
+close (OUT);                                             
+``
+I then applied the depth filter from `filterSomeMore.pl`.
+
+```perl
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+
+# filter vcf files
+
+
+### stringency variables, edits as desired
+my $maxCoverage =  1814; # maximum depth to avoid repeats, mean + 2sd
+
+my $in = shift(@ARGV);
+open (IN, $in) or die "Could not read the infile = $in\n";
+$in =~ m/^([a-zA-Z0-9_]+\.vcf)$/ or die "Failed to match the variant file\n";
+open (OUT, "> morefilter_$1") or die "Could not write the outfile\n";
+
+my $flag = 0;
+my $cnt = 0;
+
+while (<IN>){
+        chomp;
+        $flag = 1;
+        print "\n";
+        if (m/^\#/){ ## header row, always write
+                $flag = 1;
+        }
+        elsif (m/^Sc/){ ## this is a sequence line, you migh need to edit this reg. expr.
+                $flag = 1;
+                m/DP=(\d+)/ or die "Syntax error, DP not found\n";
+                if ($1 > $maxCoverage){
+                        $flag = 0;
+                        print "fail DP\n";
+                }
+                if ($flag == 1){
+                        $cnt++; ## this is a good SNV
+                }
+        }
+        else{
+                print "Warning, failed to match the chromosome or scaffold name regular expression for this line\n$_\n";
+                $flag = 0;
+        }
+        if ($flag == 1){
+                print OUT "$_\n";
+        }
+}
+close (IN);
+close (OUT);
+
+print "Finished filtering $in\nRetained $cnt variable loci\n";
+```
+
+Lastly for variant generation, I converted the vcf to gl format and applied a minor allele frequency (0.01) filter:
+
+```bash
+perl vcf2glSamt.pl 0.01 morefilter_filtered2x_tcr_refugio_variants.vcf
+```
+
+```perl
+#!/usr/bin/perl
+
+my @line = ();
+my $word;
+my $nind = 0;
+my $nloc = 0;
+my $first = 1; ## first vcf file, get ids from here
+my $out = "filtered_tcr_refugio_variants_gs.gl";
+
+open (OUT, "> $out") or die "Could not write the outfile\n";
+
+if ($out =~ s/gl/txt/){
+	open (OUT2, "> af_$out") or die "Count not write the alt. af file\n";
+}
+
+my $maf = shift (@ARGV);
+
+foreach my $in (@ARGV){
+	open (IN, $in) or die "Could not read the vcf file\n";
+	while (<IN>){
+		chomp;
+		## get individual ids
+		if (m/^#CHROM/ & ($first == 1)){
+			@line = split(m/\s+/, $_);	
+			foreach $word (@line){
+				if ($word =~ m/tcr/){
+					push (@inds, $word);
+					$nind++;
+				}
+			}
+			print OUT "$nind $nloc\n";
+			$word = join (" ", @inds);
+			print OUT "$word\n";
+		}
+		## read genetic data lines, write gl
+		elsif (m/^Sclu3Hs_(\d+);HRSCAF_\d+\s+(\d+)/){
+			$word = "$1".":"."$2";
+			if (m/AF1=([0-9\.\-e]+)/){
+				$palt = $1;
+				if ($palt > 0.5){
+					$p = 1 - $palt;
+				}
+				else {
+					$p = $palt;
+				}
+				#print "$word = $p\n";
+				if ($p >= $maf){ ## keep this locus
+					$nloc++;
+					print OUT "$word";
+					@line = split(m/\s+/, $_);
+					$i = 0;
+					foreach $word (@line){
+						if ($word =~ m/^\d\/\d\:/){
+							$word =~ m/(\d+),(\d+),(\d+)/ or die "failed match $word \n";
+							print OUT " $1 $2 $3";
+						}
+				
+					}
+					print OUT "\n";
+					print OUT2 "$palt\n"; ## print p before converting to maf
+				}
+			}
+		}	
+		
+	}
+}
+close (OUT);
+close (OUT2);
+```
+This results in 85,558 SNPs and 238 individuals for the striped genome and 87,202 SNPs and 238 individuals for the green genome. 
  
 Next, I used `entropy` (version 1.2) to estimate genotypes. This was done with each genome and with 2 or 3 source populations (5 chains each). Initial values for MCMC were generated with [initq.R](initq.R), based on simple genotype point estimates from [gl2genest.pl](gl2genest.pl) and [runEstP.pl](runEstP.pl).
 
