@@ -932,7 +932,7 @@ I then summarized the results (for pattern) in R with [summarize_gemma_gs.R](sum
 
 We fit geographic clines for stripe (phenotype and SV genotype) and background SNPs. This all uses the same genotype estiamtes (from `entropy`) used for the GWA mapping.
 
-The core analyses are all described in [ClineAnalyses.R](ClineAnalyses.R). Stan model specifications are in [cline_con.stan](cline_con.stan) and [llcline.stan](llcline.stan).
+The core analyses are all described in [ClineAnalyses.R](ClineAnalyses.R). Stan model specifications are in [cline.stan](cline.stan), [cline_con.stan](cline_con.stan) and [llcline.stan](llcline.stan).
 
 General notes that were useful for developing the ideas in the code are below.
 
