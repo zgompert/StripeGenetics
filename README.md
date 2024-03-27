@@ -475,6 +475,48 @@ grep ^Sc filt_o_timema1.vcf | grep PASS | grep -v [ATCG],[ATCG] > clean_o_timema
 
 # GWA of stripe
 
+I used the LMM in gemma (version 0.95a) for genome-wide association mapping of stripe (and color) using haplotype 1 from both the green and striped genomes and with and without including chromosome 8 for the kinship matrix. Here are the full set of commands I used:
+
+```bash
+#!/bin/sh 
+
+module load gemma
+# 0.95a
+
+## pattern gs, kinship includes ch8
+gemma -g  pattern_g_tcr_refugio_gs.geno -p ph_pattern.txt -gk 1 -o o_ref_pattern_gs -maf 0
+gemma -g  pattern_g_tcr_refugio_gs.geno -p ph_pattern.txt -k output/o_ref_pattern_gs.cXX.txt -lmm 4 -n 1 -o o_ref_pattern_gs -maf 0
+
+## color gs, kinship includes ch8
+gemma -g  color_g_tcr_refugio_gs.geno -p ph_color.txt -gk 1 -o o_ref_color_gs -maf 0
+gemma -g  color_g_tcr_refugio_gs.geno -p ph_color.txt -k output/o_ref_color_gs.cXX.txt -lmm 4 -n 1 -o o_ref_color_gs -maf 0
+
+## pattern gs, kinship excludes ch8
+gemma -g  pattern_no8_g_tcr_refugio_gs.geno -p ph_pattern.txt -gk 1 -o o_ref_pattern_no8_gs -maf 0
+gemma -g  pattern_g_tcr_refugio_gs.geno -p ph_pattern.txt -k output/o_ref_pattern_no8_gs.cXX.txt -lmm 4 -n 1 -o o_ref_pattern_no8_gs -maf 0
+
+## color gs, kinship excludes ch8
+gemma -g  color_no8_g_tcr_refugio_gs.geno -p ph_color.txt -gk 1 -o o_ref_color_no8_gs -maf 0
+gemma -g  color_g_tcr_refugio_gs.geno -p ph_color.txt -k output/o_ref_color_no8_gs.cXX.txt -lmm 4 -n 1 -o o_ref_color_no8_gs -maf 0
+
+## pattern gus, kinship includes ch8
+gemma -g  pattern_g_tcr_refugio_gus.geno -p ph_pattern.txt -gk 1 -o o_ref_pattern_gus -maf 0
+gemma -g  pattern_g_tcr_refugio_gus.geno -p ph_pattern.txt -k output/o_ref_pattern_gus.cXX.txt -lmm 4 -n 1 -o o_ref_pattern_gus -maf 0
+
+## color gus, kinship includes ch8
+gemma -g  color_g_tcr_refugio_gus.geno -p ph_color.txt -gk 1 -o o_ref_color_gus -maf 0
+gemma -g  color_g_tcr_refugio_gus.geno -p ph_color.txt -k output/o_ref_color_gus.cXX.txt -lmm 4 -n 1 -o o_ref_color_gus -maf 0
+
+## pattern gus, kinship excludes ch8
+gemma -g  pattern_no8_g_tcr_refugio_gus.geno -p ph_pattern.txt -gk 1 -o o_ref_pattern_no8_gus -maf 0
+gemma -g  pattern_g_tcr_refugio_gus.geno -p ph_pattern.txt -k output/o_ref_pattern_no8_gus.cXX.txt -lmm 4 -n 1 -o o_ref_pattern_no8_gus -maf 0
+
+## color gus, kinship excludes ch8
+gemma -g  color_no8_g_tcr_refugio_gus.geno -p ph_color.txt -gk 1 -o o_ref_color_no8_gus -maf 0
+gemma -g  color_g_tcr_refugio_gus.geno -p ph_color.txt -k output/o_ref_color_no8_gus.cXX.txt -lmm 4 -n 1 -o o_ref_color_no8_gus -maf 0
+```
+
+
 # Cline analyses
 
 A collection of notes and links that need cleaning:
