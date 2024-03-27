@@ -97,6 +97,21 @@ o$coefficients
 #(Intercept)        Dpcv
 #  0.1031575   0.3662368
 
+## phenotypic cline
+cs<-rep("orange",length(pc$x[,1]))
+cs[tapply(X=ph$host=="A",INDEX=ph$loc,mean) < 0.2]<-"cadetblue"
+yph<-tapply(ph$morph=="S",INDEX=ph$loc,sum)
+nph<-tapply(ph$morph!="M",INDEX=ph$loc,sum)
+phdat<-list(N=length(yph),x=pc$x[,1],y=yph,n=nph)
+phcfit<-stan("llcline.stan",data=cdat,iter=5000,warmup=3000)
+bph<-mean(extract(phcfit,"beta")[[1]])
+cph<-mean(extract(phcfit,"c")[[1]])
+xx<-seq(-1.2,1.2,0.01)
+plot(xx,1/(1+ exp( - (cph + xx * bph))),type='l')
+
+0.1031575 + 4/bph * 0.3662368
+0.1031575 + 4/quantile(extract(phcfit,"beta")[[1]],probs=c(0.025,0.975)) * 0.3662368
+
 ## now genetics get the cline
 pcg<-prcomp(Ggs[,sv_snps_gs],center=TRUE,scale=FALSE)
 ko<-kmeans(x=pcg$x[,1:2],centers=6,iter.max=100,nstart=25)
@@ -256,13 +271,93 @@ p_hyb_snps<-apply(round(Ggs[ldK,anc],0),2,mean)/2
 p_hyb_sv<-mean(Gsv[ldK])/2
 
 mnw<-mean(w_snps+w)/2
-mnR<-mean(ld)
-con<-1/sqrt(mean(p_hyb_sv * p_hyb_snps * (1-p_hyb_snps) * (1-p_hyb_sv)))
+D<-ld * sqrt(p_hyb_sv * p_hyb_snps * (1-p_hyb_snps) * (1-p_hyb_sv))
+Dbar<-mean(D)
+#[1] 0.03024792
+
+sig_gen<-sqrt(0.5 * Dbar * mnw^2)
+#0.2058368
+
+## changed averaging
+#mnR<-mean(ld)
+#con<-1/sqrt(mean(p_hyb_sv * p_hyb_snps * (1-p_hyb_snps) * (1-p_hyb_sv)))
 ## 4.7
-sig_gen<-mnw * sqrt(mnR*.5/con)
+#sig_gen<-mnw * sqrt(mnR*.5/con)
 
 (1.732 * sig_gen/w)^2
-## gives
+#1] 0.3836152
+
+## old
 ##[1] 0.3780105
+
+### Here is another alternative, using only unlinked SNP, not the SV
+
+chroms<-snps[anc,1]
+
+ld<-matrix(NA,nrow=length(anc),ncol=length(anc))
+for(i in 1:length(anc)){for(j in 1:length(anc)){
+        ld[i,j]<-abs(cor(round(Ggs[ldK,anc[i]],0),round(Ggs[ldK,anc[j]],0)))
+}}
+
+p_hyb_snps<-apply(round(Ggs[ldK,anc],0),2,mean)/2
+
+D<-ld
+for(i in 1:length(anc)){for(j in 1:length(anc)){
+    D[i,j]<-ld[i,j] * sqrt(p_hyb_snps[i] * (1-p_hyb_snps[i]) *p_hyb_snps[j] * (1-p_hyb_snps[j]))
+} }   
+
+unlin<-ld
+for(i in 1:length(anc)){for(j in 1:length(anc)){
+    unlin[i,j]<-chroms[i] != chroms[j]
+} }   
+    
+Dbar<-mean(D[upper.tri(D)][unlin[upper.tri(unlin)]==1])
+Dbar
+#[1] 0.02467566
+    
+wbar<-mean(w_snps)    
+sig_gen<-sqrt(.5*Dbar*mnw^2)
+#[1] 0.3209173
+
+
+## "Neutral" clines for 1000 SNPs
+
+
+## define parents
+no8_snps_gs<-which(snps[,1]!=11)
+neu<-sample(no8_snps_gs,1000,replace=FALSE)
+
+b_null<-numeric(length(neu))
+c_null<-numeric(length(neu))
+for(i in 1:length(neu)){
+	a<-tapply(INDEX=ph$loc,X=round(Ggs[,neu[i]],0),sum)
+	b<-tapply(INDEX=ph$loc,X=(Ggs[,neu[i]] >= 0) * 2,sum)
+	ps<-a/b
+	if(cor(pc$x[,1],ps) < 0){
+		a<-b-a
+		ps<-1-ps
+	}
+	sdat<-list(N=length(a),x=pc$x[,1],y=a,n=b)
+	sfit<-stan("llcline.stan",data=sdat,warmup=3000,iter=5000)
+	b_null[i]<-mean(extract(sfit,"beta")[[1]])
+	c_null[i]<-mean(extract(sfit,"c")[[1]])
+}
+
+cdat<-list(N=length(y),x=pc$x[,1],y=y,n=n)
+lcfit<-stan("llcline.stan",data=cdat)
+b_obs<-mean(extract(lcfit,"beta")[[1]])
+c_obs<-mean(extract(lcfit,"c")[[1]])
+
+xx<-seq(-1.2,1.2,0.01)
+plot(xx,1/(1+ exp( - (c_obs + xx * b_obs))),type='n')
+for(i in 1:1000){
+	py<-1/(1+ exp( - (c_null[i] + xx * b_null[i])))
+	if(mean(py) > 0.5){py<-1-py}
+	lines(xx,py,col="gray")
+}
+lines(xx,1/(1+ exp( - (c_obs + xx * b_obs))),col="firebrick",lwd=2)
+
+
+save(list=ls(),file="cline.rdat")
 
 
