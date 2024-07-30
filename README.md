@@ -1031,13 +1031,14 @@ General notes that were useful for developing the ideas in the code are below.
 
 I am using a number of analyses for functional characterization of the SVs based on the comparative alignments and annotations. 
 
-I am using `GENESPACE` (see [Lovell et al. 2022](https://elifesciences.org/articles/78526) and [this GitHub page](https://github.com/jtlovell/GENESPACE)) to look at syteny in terms of protein/gene sequences. Here is code for an analysis in progress (I need to update this with new versions of files).
+I am using `GENESPACE` (version 1.3.1) (see [Lovell et al. 2022](https://elifesciences.org/articles/78526) and [this GitHub page](https://github.com/jtlovell/GENESPACE)) to look at syteny in terms of protein/gene sequences. Here is code for an analysis in progress (I need to update this with new versions of files).
 
 ```{bash}
 module load orthofinder
 ```
 
 ```{R}
+library(GENESPACE)
 ###############################################
 genomeRepo<-"/scratch/general/nfs1/u6000989/rawGenomes"
 wd<-"/scratch/general/nfs1/u6000989/"
