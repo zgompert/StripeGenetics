@@ -1026,3 +1026,45 @@ General notes that were useful for developing the ideas in the code are below.
 * [Szymura & Barton 1986](https://onlinelibrary.wiley.com/doi/pdfdirect/10.1111/j.1558-5646.1986.tb05740.x) gives a justification for using genetic estimates of dispersal from LD, and provides an equation for doing this, it is the same as [Mallet et al 1990](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1203983/pdf/ge1244921.pdf) but assumes all allele frequencies at the center are 0.5. This paper also gives an equation for wdith as width (l) = sqrt(8 sigma2)/s, but the 8 is specific to underdominance.
 * [Szymura & Barton 1991](https://onlinelibrary.wiley.com/doi/pdf/10.1111/j.1558-5646.1991.tb04400.x) makes similar arguments and includes the sigmoidal cline function, P = [1 + tanh(2(x-c)/w]/2]. 
 * Cline width depends on s and sigma in slightly different ways for different types of selection. This is summarized in [Barton & Gale](https://books.google.com/books?hl=en&lr=&id=aFJFkVKskYIC&oi=fnd&pg=PA13&ots=MFk-dnK9NI&sig=r7KfAnHvJyLgyUJsMeLs7jpp33c#v=onepage&q&f=false). Let s* be the difference in mean fitness between populations at the center and edge of the zone, then w = 1.732 sigma/srt(s*) for selection favoring alternative alleles on sides of an ecotone with no dominance, 1.782 with dominance.
+
+# Comparative functional genomics
+
+I am using a number of analyses for functional characterization of the SVs based on the comparative alignments and annotations. 
+
+I am using `GENESPACE` (see [Lovell et al. 2022](https://elifesciences.org/articles/78526) and [this GitHub page](https://github.com/jtlovell/GENESPACE)) to look at syteny in terms of protein/gene sequences. Here is code for an analysis in progress (I need to update this with new versions of files).
+
+```{bash}
+module load orthofinder
+```
+
+```{R}
+###############################################
+genomeRepo<-"/scratch/general/nfs1/u6000989/rawGenomes"
+wd<-"/scratch/general/nfs1/u6000989/"
+path2mcscanx<-"~/bin/"
+
+# -- download raw data from NCBI for human and chicken genomes UPDATE
+dir.create(genomeRepo)
+rawFiles <- download_exampleData(filepath = genomeRepo)
+
+# -- parse the annotations to fastas with headers that match a gene bed file
+parsedPaths <- parse_annotations(
+  rawGenomeRepo = genomeRepo,
+  genomeDirs = c("human", "chicken"),
+  genomeIDs = c("human", "chicken"),
+  presets = "ncbi",
+  genespaceWd = wd)
+
+# -- initalize the run and QC the inputs
+
+
+gpar <- init_genespace(
+  wd = wd, 
+  path2mcscanx = path2mcscanx)
+
+## need to set this
+gpar$shellCalls$orthofinder<-"orthofinder"
+
+# -- accomplish the run
+out <- run_genespace(gpar)
+```
