@@ -75,7 +75,7 @@ cactus jobStoreGSR2_GUSR1 /uufs/chpc.utah.edu/common/home/gompert-group4/data/ti
 cactus jobStoreGSR1_GSM /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/comp_aligns/cactusStripe_TcrGSR1_TcrMainGS.txt cactusTcrGSR1_TcrGS.hal --maxCores 80 
 cactus jobStoreGUSR1_GUSM /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/comp_aligns/cactusStripe_TcrGUSR1_TcrMainGUS.txt cactusTcrGUSR1_TcrGUS.hal --maxCores 80 
 ```
-Next, we used `halSyntency` to extract synteny blocks from the genom alignments.
+Next, we used `halSyntency` to extract synteny blocks from the genome alignments.
 
 ```{bash}
 #!/bin/sh 
@@ -130,7 +130,7 @@ We annotated the eight *Timema* genomes using [braker3](https://github.com/Gaius
 
 Annotations are in /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/Annotation/ with one subdirectory for each genome. 
 
-Structural annotation with `braker` (version 3.0.8) used protein and RNA sequence data. The protain data comprised 2,601,995 proteins from UniProt (). The RNA data are *T. cristinae* (N = 18) from 2017, which were originally published as part of a study of DNA methylation, see [de Carvalho et al. 2023](https://onlinelibrary.wiley.com/doi/abs/10.1111/mec.17165) ([BioProject PRJNA1010130](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA1010130)). It took some work to get this to run on the cluster (see comments in script for things that had to be done initially to make things work). Here is an example (for the main mountain green haplotype 1) of the script I used for the run. This includes a BUSO assessment (based on insecta_odb10) of the inferred genes and of the original genome. All of the results are in the braker subdirectory for each genome.
+Structural annotation with `braker` (version 3.0.8) used protein and RNA sequence data. The protain data comprised 2,601,995 arthropod proteins from OrthDB (arthropod data set version 10 (odb10_arthropoda_fasta.tar.gz) (the input file is named `proteins.fasta`; this is the same input used for `braker2` in [Nosil et al. 2023](https://www.pnas.org/doi/abs/10.1073/pnas.2300673120)). The RNA data are *T. cristinae* (N = 18) from 2017, which were originally published as part of a study of DNA methylation, see [de Carvalho et al. 2023](https://onlinelibrary.wiley.com/doi/abs/10.1111/mec.17165) ([BioProject PRJNA1010130](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA1010130)). It took some work to get this to run on the cluster (see comments in script for things that had to be done initially to make things work). Here is an example (for the main mountain green haplotype 1) of the script I used for the run. This includes a BUSO assessment (based on insecta_odb10) of the inferred genes and of the original genome. All of the results are in the braker subdirectory for each genome.
 
 ```{bash}
 #!/bin/bash 
