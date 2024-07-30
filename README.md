@@ -177,6 +177,11 @@ We have very high BUSCO scores for the genomes, and more modest scores for the f
 | Genome | Genome % complete | AA % complete |
 |--------|-------------------|---------------|
 | t_crist_hyw154_green_h1 | 99.1 | 67.0 |
+| t_crist_hyw154_green_h2 | 99.5 | 70.0 |
+| t_crist_refug_green_h1 | 99.4 | 70.0 |
+| t_crist_refug_green_h2 | 99.2 | 70.9 |
+| t_crist_refug_stripe_h1 | 99.2 | 69.0 |
+| t_crist_refug_stripe_h2 | 90.3 | 65.9 |
 
 # Demographic inference
 
