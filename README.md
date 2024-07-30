@@ -124,6 +124,57 @@ $pm->wait_all_children;
 
 We then made synteny and alignment plots in R, see [SynPlotsRefugio.R](https://github.com/zgompert/StripeGenetics/blob/main/SynPlotsRefugioPlus.R).
 
+# Genome annotations
+
+We annotated the eight *Timema* genomes using braker3 (structural annotation) and interproscan5 (functional annotation). 
+
+Annotations are in /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/Annotation/ with one subdirectory for each genome. 
+
+Structural annotation with [braker3](https://github.com/Gaius-Augustus/BRAKER) (version 3.0.8) used protein and RNA sequence data. The protain data comprised 2,601,995 proteins from UniProt (). It took some work to get this to run on the cluster (see comments in script for things that had to be done initially to make things work). Here is an example (for the main mountain green haplotype 1) of the script I used for the run. This includes a BUSO assessment of the inferred genes and of the original genome. All of the results are in the braker subdirectory for each genome.
+
+```{bash}
+#!/bin/bash 
+#SBATCH --time=240:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=24
+#SBATCH --account=gompert-kp
+#SBATCH --partition=gompert-kp
+#SBATCH --job-name=braker
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+source ~/.bashrc
+
+ml braker/3.0.8
+ml busco
+#mkdir ~/augustus
+#containerShell
+#cp /usr/share/augustus/config ~/augustus
+#exit
+
+#cd
+#mv ~/augustus/config ~/augustus/config-old
+#ml braker/3.0.8
+#containerShell
+#cp -r /opt/Augustus/config ~/augustus/
+#exit
+
+cd /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/Annotation/t_crist_hyw154_green_h1
+
+## run braker
+braker.pl --genome=../../t_crist_gus_hap_cen4280/HiRise/Hap1/ojincantatabio-cen4280-hap1-mb-hirise-ig5ps__01-30-2024__hic_output.fasta.masked --prot_seq=../proteins.fasta --rnaseq_sets_ids=tcr135.17_0003_R,tcr137.17_0006_R,tcr139.17_0012_R,tcr140.17_0015_R,tcr141.17_0019_R,tcr142.17_0043_R,tcr143.17_0045_R,tcr144.17_0049_R,tcr145.17_0051_R,tcr146.17_0057_R,tcr148.17_0062_R,tcr149.17_0065_R,tcr150.17_0067_R,tcr151.17_0070_R,tcr152.17_0074_R,tcr173.17_0075_R,tcr174.17_0081_R,tcr175.17_0082_R --rnaseq_sets_dirs=/scratch/general/nfs1/u6000989/timema_rna_2020/ --AUGUSTUS_SCRIPTS_PATH=/usr/share/augustus/scripts --AUGUSTUS_CONFIG_PATH=/uufs/chpc.utah.edu/common/home/u6000989/augustus/config --threads=48 --gff3
+
+## run busco, genome and aa
+cd braker
+## genome
+busco -i ../../../t_crist_gus_hap_cen4280/HiRise/Hap1/ojincantatabio-cen4280-hap1-mb-hirise-ig5ps__01-30-2024__hic_output.fasta.masked -m geno -o busco_genome_out -l insecta_odb10
+
+## amino acids
+busco -i braker.aa -m prot -o busco_aa_out -l insecta_odb10
+```
+
+
+
 # Demographic inference
 
 We used `moments` to fit and compare four historical demographic models for *T. cristinae* Refugio versus Hwy 154.
