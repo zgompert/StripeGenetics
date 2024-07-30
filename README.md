@@ -126,11 +126,11 @@ We then made synteny and alignment plots in R, see [SynPlotsRefugio.R](https://g
 
 # Genome annotations
 
-We annotated the eight *Timema* genomes using braker3 (structural annotation) and interproscan5 (functional annotation). 
+We annotated the eight *Timema* genomes using [braker3](https://github.com/Gaius-Augustus/BRAKER) (structural annotation) and [interproscan5](https://academic.oup.com/bioinformatics/article/30/9/1236/237988?login=false) (functional annotation). 
 
 Annotations are in /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/Annotation/ with one subdirectory for each genome. 
 
-Structural annotation with [braker3](https://github.com/Gaius-Augustus/BRAKER) (version 3.0.8) used protein and RNA sequence data. The protain data comprised 2,601,995 proteins from UniProt (). It took some work to get this to run on the cluster (see comments in script for things that had to be done initially to make things work). Here is an example (for the main mountain green haplotype 1) of the script I used for the run. This includes a BUSO assessment of the inferred genes and of the original genome. All of the results are in the braker subdirectory for each genome.
+Structural annotation with `braker` (version 3.0.8) used protein and RNA sequence data. The protain data comprised 2,601,995 proteins from UniProt (). It took some work to get this to run on the cluster (see comments in script for things that had to be done initially to make things work). Here is an example (for the main mountain green haplotype 1) of the script I used for the run. This includes a BUSO assessment (based on insecta_odb10) of the inferred genes and of the original genome. All of the results are in the braker subdirectory for each genome.
 
 ```{bash}
 #!/bin/bash 
