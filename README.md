@@ -172,7 +172,7 @@ busco -i ../../../t_crist_gus_hap_cen4280/HiRise/Hap1/ojincantatabio-cen4280-hap
 ## amino acids
 busco -i braker.aa -m prot -o busco_aa_out -l insecta_odb10
 ```
-
+We have very high BUSCO scores for the genomes, and more modest scores for the found genes, which is to be expected (braker is not designed to maximize BUSCOs, but rather to identify genes with high confidence) (more details are in busco_genome_out and busco_aa_out).
 
 
 # Demographic inference
