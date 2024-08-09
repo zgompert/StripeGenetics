@@ -207,6 +207,44 @@ cat braker.aa | perl -p -i -e 's/\*//g' > braker_aa.fasta
 /uufs/chpc.utah.edu/sys/installdir/r8/interproscan/5.63/interproscan.sh -cpu 48 -i braker_aa.fasta -goterms -b interpro_aa
 ````
 
+I am using local blast (blastn) to summarize the genomes/annotations, specifically, to see how many genes found in any genome are missing from each genome and to see specifically what the gene content is for the translocation genomic regions.
+
+First, I made local blast database files.
+```{bash}
+module load blast
+## version 2.11.0
+
+## executed from the subdirectory with each genome
+ makeblastdb -in ojincantatabio-cen4122-hap1-mb-hirise-g4hzf__08-10-2023__final_assembly.fasta -dbtype nucl -parse_seqids -title "t_crist_refug_stripe_h1"
+makeblastdb -in ojincantatabio-cen4122-hap2-mb-hirise-14fv0__08-10-2023__final_assembly.fasta -dbtype nucl -parse_seqids -title "t_crist_refug_stripe_h2"
+
+makeblastdb -in ojincantatabio-cen4120-hap1-mb-hirise-wlbll__08-15-2023__final_assembly.fasta -dbtype nucl -parse_seqids -title "t_crist_refug_green_h1"
+makeblastdb -in ojincantatabio-cen4120-hap1-mb-hirise-wlbll__08-15-2023__final_assembly.fasta -dbtype nucl -parse_seqids -title "t_crist_refug_green_h2"
+
+makeblastdb -in final_assembly.fasta -dbtype nucl -parse_seqids -title "t_crist_h154_stripe_h1"
+makeblastdb -in final_assembly.fasta -dbtype nucl -parse_seqids -title "t_crist_h154_stripe_h2"
+
+makeblastdb -in ojincantatabio-cen4280-hap1-mb-hirise-ig5ps__01-30-2024__hic_output.fasta -dbtype nucl -parse_seqids -title "t_crist_h154_green_h1"
+makeblastdb -in ojincantatabio-cen4280-hap2-mb-hirise-i2xb7__01-30-2024__hic_output.fasta -dbtype nucl -parse_seqids -title "t_crist_h154_green_h2"
+```
+
+Next I concatenated all of the coding sequences found from all annotations.
+
+```{bash}
+cd /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/Annotation
+cat t_crist_[hr]*/braker/braker.codingseq > combined_CDS.txt
+```
+
+Then, I blased this set against each genome.
+
+```{bash}
+cd /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/Annotation
+blastn -query combined_CDS.txt -db ../t_crist_gs_hap_cen4119/HiRise/Hap1/final_assembly.fasta -evalue 1e-6 -num_threads 20 -out oblast_tcr_h154_green_h1
+blastn -query combined_CDS.txt -db ../t_crist_gs_hap_cen4119/HiRise/Hap2/final_assembly.fasta -evalue 1e-6 -num_threads 20 -out oblast_tcr_h154_green_h2
+```
+
+I summarized these hits with the perl script [ParseBlast.pl](ParseBlast.pl). 
+
 # Demographic inference
 
 We used `moments` to fit and compare four historical demographic models for *T. cristinae* Refugio versus Hwy 154.
