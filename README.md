@@ -3,7 +3,7 @@ Genomic analyses of color-pattern in *Timema cristinae* with a focus on structur
 
 # Genomes
 
-We have two new pairs of phased genomes for *T. cristinae*. Both are from Refugio, one is for a striped morph and one is for a green (unstriped) morph. This were both generated from PacBio data combined with Illumina/Omni-C.
+We have four pairs of phased genomes for *T. cristinae*. Two are from Refugio and two are from Hwy 154--one from each mountain is for a striped morph and one is for a green (unstriped) morph. This were all generated from PacBio data combined with Illumina/Omni-C.
 
 The data are here:
 
@@ -18,6 +18,13 @@ Refugio green (CEN4120) [report](https://github.com/zgompert/StripeGenetics/blob
 Haplotype 1: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_green/HiRise/hap1`
 
 Haplotype 2: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_green/HiRise/hap2`
+
+Hwy 154 striped (CEN4119) [report](https://github.com/zgompert/StripeGenetics/blob/main/CEN4122_report.html)
+
+Haplotype 1: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_gs_hap_cen4119/HiRise/Hap1`
+
+Haplotype 2: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_gs_hap_cen4119/HiRise/Hap2`
+
 
 We used RepeatMasker (version 4.0.7) and the *T. cristinae* repeat library to mask repeates for each genome.
 
