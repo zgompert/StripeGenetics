@@ -9,7 +9,7 @@ The data are here:
 
 Refugio striped (CEN4122) [report](https://github.com/zgompert/StripeGenetics/blob/main/CEN4122_report.html)
 
-Haplotype 1: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap1`
+Haplotype 1: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap1` [report](https://github.com/zgompert/StripeGenetics/blob/main/CEN4122_report.html)
 
 Haplotype 2: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap2`
 
@@ -19,11 +19,17 @@ Haplotype 1: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_gen
 
 Haplotype 2: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_green/HiRise/hap2`
 
-Hwy 154 striped (CEN4119) [report](https://github.com/zgompert/StripeGenetics/blob/main/CEN4122_report.html)
+Hwy 154 striped (CEN4119) [report](https://github.com/zgompert/StripeGenetics/blob/main/CEN4119_report.html)
 
 Haplotype 1: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_gs_hap_cen4119/HiRise/Hap1`
 
 Haplotype 2: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_gs_hap_cen4119/HiRise/Hap2`
+
+Hwy 154 green (CEN4280) [report](https://github.com/zgompert/StripeGenetics/blob/main/CEN4280_report.html)
+
+Haplotype 1: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_gus_hap_cen4280/HiRise/Hap1`
+
+Haplotype 2: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_gus_hap_cen4280/HiRise/Hap1`
 
 
 We used RepeatMasker (version 4.0.7) and the *T. cristinae* repeat library to mask repeates for each genome.
