@@ -9,21 +9,21 @@ The data are here:
 
 Refugio striped (CEN4122) [report](https://github.com/zgompert/StripeGenetics/blob/main/CEN4122_report.html)
 
-Haplotype 1: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap1` [report](https://github.com/zgompert/StripeGenetics/blob/main/CEN4122_report.html)
+Haplotype 1: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap1` [report](https://github.com/zgompert/StripeGenetics/blob/main/CEN4122-hap1.pdf)
 
-Haplotype 2: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap2`
+Haplotype 2: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap2` [report](https://github.com/zgompert/StripeGenetics/blob/main/CEN4122-hap2.pdf)
 
 Refugio green (CEN4120) [report](https://github.com/zgompert/StripeGenetics/blob/main/CEN4120_report.html)
 
-Haplotype 1: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_green/HiRise/hap1`
+Haplotype 1: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_green/HiRise/hap1` [report](https://github.com/zgompert/StripeGenetics/blob/main/CEN4120-hap1.pdf)
 
-Haplotype 2: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_green/HiRise/hap2`
+Haplotype 2: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_green/HiRise/hap2` [report](https://github.com/zgompert/StripeGenetics/blob/main/CEN4120-hap2.pdf)
 
 Hwy 154 striped (CEN4119) [report](https://github.com/zgompert/StripeGenetics/blob/main/CEN4119_report.html)
 
-Haplotype 1: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_gs_hap_cen4119/HiRise/Hap1`
+Haplotype 1: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_gs_hap_cen4119/HiRise/Hap1` [report](https://github.com/zgompert/StripeGenetics/blob/main/CEN4119-Hap1.pdf)
 
-Haplotype 2: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_gs_hap_cen4119/HiRise/Hap2`
+Haplotype 2: `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_gs_hap_cen4119/HiRise/Hap2` [report](https://github.com/zgompert/StripeGenetics/blob/main/CEN4119-Hap1.pdf)
 
 Hwy 154 green (CEN4280) [report](https://github.com/zgompert/StripeGenetics/blob/main/CEN4280_report.html)
 
