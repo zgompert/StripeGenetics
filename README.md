@@ -1,5 +1,5 @@
 # StripeGenetics
-Genomic analyses of color-pattern in *Timema cristinae* with a focus on structural variation and Refugio
+Genomic analyses of color-pattern in *Timema cristinae*, with a focus on comparative genetic architecture between Refugio and Hwy 154
 
 # Genomes
 
