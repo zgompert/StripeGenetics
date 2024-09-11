@@ -194,6 +194,8 @@ We have very high BUSCO scores for the genomes, and more modest scores for the f
 
 | Genome | Genome % complete | AA % complete |
 |--------|-------------------|---------------|
+| t_crist_hyw154_stripe_h1 | 99.5 | 65.1 |
+| t_crist_hyw154_stripe_h2 | 99.4 | -- |
 | t_crist_hyw154_green_h1 | 99.1 | 67.0 |
 | t_crist_hyw154_green_h2 | 99.5 | 70.0 |
 | t_crist_refug_green_h1 | 99.4 | 70.0 |
@@ -1071,50 +1073,52 @@ I then summarized the results (for pattern) in R with [summarize_gemma_gs.R](sum
 
 We conducted an additional GWA mapping analysis based on 602 *T. cristinae* from Hwy 154, specifically FHA (see [Comeault et al., 2015](https://www.cell.com/current-biology/fulltext/S0960-9822(15)00661-2)). The fastq files are in `/uufs/chpc.utah.edu/common/home/gompert-group3/data/timema_clines_rw_SV/reads_fha_mapping_sample`. 
 
-We aligned these data to haplotype 1 of the striped genome and haplotype 2 of the green genome Hwy 154 (VP A) using `bwa` (version 0.7.17-r1198-dirty).
+We aligned these data to haplotype 1 of the striped genome and haplotype 2 of the green genome Hwy 154 (VP A) using `bwa` (version 0.7.17-r1198-dirty), see `/uufs/chpc.utah.edu/common/home/gompert-group3/data/timema_clines_rw_SV/align_fha_mapping_sample_phased_gs1`.
 
 ```perl
 #!/usr/bin/perl
 #
-# alignment with bwa
+# run bwa 
 #
+
 
 use Parallel::ForkManager;
 my $max = 24;
 my $pm = Parallel::ForkManager->new($max);
 
-## green refugio hap 1
-#my $genome = "/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_green/HiRise/hap1/ojincantatabio-cen4120-hap1-mb-hirise-wlbll__08-15-2023__final_assembly.fasta";
+## stripe hwy154 hap 1
+#my $genome = "/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_gs_hap_cen4119/HiRise/Hap1/final_assembly.fasta";
 
-## stripe refugio hap 1
-my $genome = "/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap1/ojincantatabio-cen4122-hap1-mb-hirise-g4hzf__08-10-2023__final_assembly.fasta";
+## green hwy154 hap 2
+my $genome = "/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_gus_hap_cen4280/HiRise/Hap2/ojincantatabio-cen4280-hap2-mb-hirise-i2xb7__01-30-2024__hic_output.fasta";
 
 FILES:
 foreach $fq (@ARGV){
-        $pm->start and next FILES; ## fork
-        if ($fq =~ m/(16_[a-zA-Z0-9_]+)/){
-                $ind = $1;
-        }
-        else {
-                die "Failed to match $file\n";
-        }
-        system "bwa aln -n 4 -l 20 -k 2 -t 1 -q 10 -f aln"."$ind".".sai $genome $fq\n";
-        system "bwa samse -n 1 -r \'\@RG\\tID:tcr-"."$ind\\tPL:ILLUMINA\\tLB:tcr-"."$ind\\tSM:tcr-"."$ind"."\' -f aln"."$ind".".sam $genome aln"."$ind".".sai $fq\n";
-        $pm->finish;
+	$pm->start and next FILES; ## fork
+        if ($fq =~ m/^(2013[A-Z0-9_]+)/){
+        	$ind = $1;
+    	}
+    	else {
+       		die "Failed to match $file\n";
+    	}
+	system "bwa aln -n 4 -l 20 -k 2 -t 1 -q 10 -f aln_h_gus2_"."$ind".".sai $genome $fq\n";
+	system "bwa samse -n 1 -r \'\@RG\\tID:fha-"."$ind\\tPL:ILLUMINA\\tLB:fha-"."$ind\\tSM:fha-"."$ind"."\' -f aln_h_gus2_"."$ind".".sam $genome aln_h_gus2_"."$ind".".sai $fq\n";
+	$pm->finish;
 }
 
 $pm->wait_all_children;
 
+
 ```
-We then  compressed, sorted and indexed the alignment files with `samtools` (version 1.16). Here is the version for the striped genome (green is bascially the same thing).
+We then  compressed, sorted and indexed the alignment files with `samtools` (version 1.16). 
 
 ```bash
 #!/bin/sh
 #SBATCH --time=48:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=16
-#SBATCH --account=gompert
-#SBATCH --partition=notchpeak
+#SBATCH --account=wolf-kp
+#SBATCH --partition=wolf-kp
 #SBATCH --job-name=sam2bam
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=zach.gompert@usu.edu
@@ -1122,9 +1126,9 @@ We then  compressed, sorted and indexed the alignment files with `samtools` (ver
 module load samtools
 ## samtools 1.16
 
-cd /uufs/chpc.utah.edu/common/home/gompert-group3/data/timema_clines_rw_SV/align_refugio_gs
-perl Sam2BamFork.pl *sam
+cd /scratch/general/nfs1/u6000989/t_cris_fha
 
+perl Sam2BamFork.pl *sam
 ```
 
 ```perl
@@ -1135,7 +1139,7 @@ perl Sam2BamFork.pl *sam
 
 
 use Parallel::ForkManager;
-my $max = 16;
+my $max = 24;
 my $pm = Parallel::ForkManager->new($max);
 
 FILES:
@@ -1150,14 +1154,13 @@ foreach $sam (@ARGV){
 }
 
 $pm->wait_all_children;
-
 ````
 
 We then used `samtools` and `bcftools` (version 1.16 for both) for variant calling (again with each genome).
 
 ```bash
 #!/bin/sh 
-#SBATCH --time=196:00:00
+#SBATCH --time=72:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=12
 #SBATCH --account=wolf-kp
@@ -1172,14 +1175,39 @@ module load samtools
 ## samtools 1.16
 
 
-cd /uufs/chpc.utah.edu/common/home/gompert-group3/data/timema_clines_rw_SV/align_refugio_gs
-
+cd /scratch/general/nfs1/u6000989/t_cris_fha
 ## index genome just needs to be done once
-#samtools faidx /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap1/ojincantatabio-cen4122-hap1-mb-hirise-g4hzf__08-10-2023__final_assembly.fasta
+#samtools faidx /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_gs_hap_cen4119/HiRise/Hap1/final_assembly.fasta
+#samtools faidx /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_gus_hap_cen4280/HiRise/Hap2/ojincantatabio-cen4280-hap2-mb-hirise-i2xb7__01-30-2024__hic_output.fasta
 
-bcftools mpileup -b bams -C 50 -d 500 -f /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap1/ojincantatabio-cen4122-hap1-mb-hirise-g4hzf__08-10-2023__final_assembly.fasta -q 20 -Q 30 -I -Ou -a DP,AD,ADF,ADR | bcftools call -v -c -p 0.01 -P 0.001 -O v -o tcr_refugio_variants_gs.vcf 
+bcftools mpileup -b bams_gs1 -C 50 -d 500 -f /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_gs_hap_cen4119/HiRise/Hap1/final_assembly.fasta -q 20 -Q 30 -I -Ou -a DP,AD,ADF,ADR | bcftools call -v -c -p 0.01 -P 0.001 -O v -o tcr_h154_variants_gs.vcf 
 ```
-I used our standard perl scripts (vcfFilter.pl) for filtering the vcf files. The one for the striped genome is. 
+
+```bash
+#!/bin/sh 
+#SBATCH --time=72:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=12
+#SBATCH --account=gompert
+#SBATCH --partition=notchpeak
+#SBATCH --job-name=bcfCall
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load bcftools
+module load samtools
+## bcftools 1.16
+## samtools 1.16
+
+
+cd /scratch/general/nfs1/u6000989/t_cris_fha
+## index genome just needs to be done once
+#samtools faidx /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_gs_hap_cen4119/HiRise/Hap1/final_assembly.fasta
+#samtools faidx /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_gus_hap_cen4280/HiRise/Hap2/ojincantatabio-cen4280-hap2-mb-hirise-i2xb7__01-30-2024__hic_output.fasta
+
+bcftools mpileup -b bams_gus2 -C 50 -d 500 -f /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_gus_hap_cen4280/HiRise/Hap2/ojincantatabio-cen4280-hap2-mb-hirise-i2xb7__01-30-2024__hic_output.fasta -q 20 -Q 30 -I -Ou -a DP,AD,ADF,ADR | bcftools call -v -c -p 0.01 -P 0.001 -O v -o tcr_h154_variants_gus.vcf 
+```
+I used our standard perl scripts (vcfFilter.pl) for filtering the vcf files. 
 
 ```perl
 #!/usr/bin/perl
@@ -1195,16 +1223,15 @@ use strict;
 #
 
 #### stringency variables, edits as desired
-## 238 inds, 2x
-my $minCoverage = 476; # minimum number of sequences; DP
+## 602 inds, 2x
+my $minCoverage = 1204; # minimum number of sequences; DP
 my $minAltRds = 10; # minimum number of sequences with the alternative allele; AC
 my $notFixed = 1.0; # removes loci fixed for alt; AF
-my $bqrs = 0.005; # p-value base quality rank sum test; BaseQRankSum
-my $mqrs = 0.005; # p-value mapping quality rank sum test; MQRankSum
-my $rprs = 0.005; # p-value read position rank sum test; ReadPosRankSum
-my $qd = 2; # minimum ratio of variant confidenct to non reference read depth; QD
+my $bqrs = 4; # z for base quality rank sum test; BQBZ
+my $mqrs = 4; # z for mapping quality rank sum test; MQBZ
+my $rprs = 4; # z for read position rank sum test; RPBZ
 my $mq = 30; # minimum mapping quality; MQ
-my $miss = 47; # maximum number of individuals with no data
+my $miss = 240; # maximum number of individuals with no data
 ##### this set is for GBS
 my $d;
 
@@ -1219,87 +1246,89 @@ my $flag = 0;
 my $cnt = 0;
 
 while (<IN>){
-        chomp;
-        $flag = 1;
-        if (m/^\#/){ ## header row, always write
-                $flag = 1;
-        }
-        elsif (m/^Sc/){ ## this is a sequence line, you migh need to edit this reg. expr.
-                $flag = 1;
-                $d = () = (m/\d\/\d:0,0,0:0/g); ## for bcftools call
-                if ($d >= $miss){
-                        $flag = 0;
-                        ##print "fail missing : ";
-                }
-                if (m/[ACTGN]\,[ACTGN]/){ ## two alternative alleles identified
-                        $flag = 0;
-                        #print "fail allele : ";
-                }
-                @line = split(/\s+/,$_);
-                if(length($line[3]) > 1 or length($line[4]) > 1){
-                        $flag = 0;
-                        #print "fail INDEL : ";
-                }
-                m/DP=(\d+)/ or die "Syntax error, DP not found\n";
-                if ($1 < $minCoverage){
-                        $flag = 0;
-                        #print "fail DP : ";
-               }
+	chomp;
+	$flag = 1;
+	if (m/^\#/){ ## header row, always write
+		$flag = 1;
+	}
+	elsif (m/^Sc/){ ## this is a sequence line, you migh need to edit this reg. expr.
+		$flag = 1;
+		$d = () = (m/\d\/\d:0,0,0:0/g); ## for bcftools call
+		if ($d >= $miss){
+			$flag = 0;
+			##print "fail missing : ";
+		}
+		if (m/[ACTGN]\,[ACTGN]/){ ## two alternative alleles identified
+			$flag = 0;
+			#print "fail allele : ";
+		}
+		@line = split(/\s+/,$_);
+		if(length($line[3]) > 1 or length($line[4]) > 1){
+			$flag = 0;
+			#print "fail INDEL : ";
+		}
+		m/DP=(\d+)/ or die "Syntax error, DP not found\n";
+		if ($1 < $minCoverage){
+			$flag = 0;
+			#print "fail DP : ";
+		}
 ## bcftools call version
+	
+		m/DP4=\d+,\d+,(\d+),(\d+)/ or die "Syntax error DP4 not found\n";
+		if(($1 + $2) < $minAltRds){
+			$flag = 0;
+		}
+		m/AF1*=([0-9\.e\-]+)/ or die "Syntax error, AF not found\n";
+		if ($1 == $notFixed){
+			$flag = 0;
+		#	print "fail AF : ";
+		}
 
-                m/DP4=\d+,\d+,(\d+),(\d+)/ or die "Syntax error DP4 not found\n";
-                if(($1 + $2) < $minAltRds){
-                        $flag = 0;
-                }
-                m/AF1*=([0-9\.e\-]+)/ or die "Syntax error, AF not found\n";
-                if ($1 == $notFixed){
-                        $flag = 0;
-                #       print "fail AF : ";
-                }
-
-## bcftools call verions, these are p-values, use 0.01
-                if(m/BQB=([0-9e\-\.]*)/){
-                        if ($1 < 0.005){
-                                $flag = 0;
-#                               print "fail BQRS : ";
-                        }
-                }
-                if(m/MQB=([0-9e\-\.]*)/){
-                        if ($1 < 0.005){
-                                $flag = 0;
-#                               print "fail MQRS : ";
-                        }
-                }
-                if(m/RPB=([0-9e\-\.]*)/){
-                        if ($1 < 0.005){
-                                $flag = 0;
-#                               print "fail RPRS : ";
-                        }
-                }
-                if(m/MQ=([0-9\.]+)/){
-                        if ($1 < $mq){
-                                $flag = 0;
-#                               print "fail MQ : ";
-                        }
-                }
-                else{
-                        $flag = 0;
-                        print "faile no MQ : ";
-                }
-                if ($flag == 1){
-                        $cnt++; ## this is a good SNV
-                }
-        }
-        else{
-                print "Warning, failed to match the chromosome or scaffold name regular expression for this line\n$_\n";
-                $flag = 0;
-        }
-        if ($flag == 1){
-                print OUT "$_\n";
-        }
+## bcftools call verion with Z scores 
+		if(m/BQBZ=([0-9e\-\.]*)/){
+			if (abs($1) > $bqrs){
+				$flag = 0;
+#				print "fail BQRS : ";
+			}
+		}
+		if(m/MQBZ=([0-9e\-\.]*)/){
+			if (abs($1) > $mqrs){
+				$flag = 0;
+#				print "fail MQRS : ";
+			}
+		}
+		if(m/RPBZ=([0-9e\-\.]*)/){
+			if (abs($1) > $rprs){
+				$flag = 0;
+#				print "fail RPRS : ";
+			}
+		}
+		if(m/MQ=([0-9\.]+)/){
+			if ($1 < $mq){
+				$flag = 0;
+#				print "fail MQ : ";
+			}
+		}
+		else{
+			$flag = 0;
+			print "faile no MQ : ";
+		}
+		if ($flag == 1){
+			$cnt++; ## this is a good SNV
+		}
+	}
+	else{
+		print "Warning, failed to match the chromosome or scaffold name regular expression for this line\n$_\n";
+		$flag = 0;
+	}
+	if ($flag == 1){
+		print OUT "$_\n";
+	}
 }
 close (IN);
-close (OUT);                                             
+close (OUT);
+
+print "Finished filtering $in\nRetained $cnt variable loci\n";                 
 ``
 I then applied the depth filter from `filterSomeMore.pl`.
 
@@ -1313,7 +1342,8 @@ use strict;
 
 
 ### stringency variables, edits as desired
-my $maxCoverage =  1814; # maximum depth to avoid repeats, mean + 2sd
+my $maxCoverage =  8433; # maximum depth to avoid repeats, mean + 3sd == gs
+#my $maxCoverage =  8142; # maximum depth to avoid repeats, mean + 3sd == gus
 
 my $in = shift(@ARGV);
 open (IN, $in) or die "Could not read the infile = $in\n";
@@ -1324,30 +1354,30 @@ my $flag = 0;
 my $cnt = 0;
 
 while (<IN>){
-        chomp;
-        $flag = 1;
-        print "\n";
-        if (m/^\#/){ ## header row, always write
-                $flag = 1;
-        }
-        elsif (m/^Sc/){ ## this is a sequence line, you migh need to edit this reg. expr.
-                $flag = 1;
-                m/DP=(\d+)/ or die "Syntax error, DP not found\n";
-                if ($1 > $maxCoverage){
-                        $flag = 0;
-                        print "fail DP\n";
-                }
-                if ($flag == 1){
-                        $cnt++; ## this is a good SNV
-                }
-        }
-        else{
-                print "Warning, failed to match the chromosome or scaffold name regular expression for this line\n$_\n";
-                $flag = 0;
-        }
-        if ($flag == 1){
-                print OUT "$_\n";
-        }
+	chomp;
+	$flag = 1;
+	print "\n";
+	if (m/^\#/){ ## header row, always write
+		$flag = 1;
+	}
+	elsif (m/^Sc/){ ## this is a sequence line, you migh need to edit this reg. expr.
+		$flag = 1;
+		m/DP=(\d+)/ or die "Syntax error, DP not found\n";
+		if ($1 > $maxCoverage){
+			$flag = 0;
+			print "fail DP\n";
+		}
+		if ($flag == 1){
+			$cnt++; ## this is a good SNV
+		}
+	}
+	else{
+		print "Warning, failed to match the chromosome or scaffold name regular expression for this line\n$_\n";
+		$flag = 0;
+	}
+	if ($flag == 1){
+		print OUT "$_\n";
+	}
 }
 close (IN);
 close (OUT);
@@ -1369,7 +1399,8 @@ my $word;
 my $nind = 0;
 my $nloc = 0;
 my $first = 1; ## first vcf file, get ids from here
-my $out = "filtered_tcr_refugio_variants_gs.gl";
+my $out = "filtered_tcr_h154_variants_gus.gl";
+#my $out = "filtered_tcr_h154_variants_gs.gl";
 
 open (OUT, "> $out") or die "Could not write the outfile\n";
 
@@ -1377,7 +1408,7 @@ if ($out =~ s/gl/txt/){
 	open (OUT2, "> af_$out") or die "Count not write the alt. af file\n";
 }
 
-my $maf = shift (@ARGV);
+my $maf = 0.01;
 
 foreach my $in (@ARGV){
 	open (IN, $in) or die "Could not read the vcf file\n";
@@ -1387,7 +1418,7 @@ foreach my $in (@ARGV){
 		if (m/^#CHROM/ & ($first == 1)){
 			@line = split(m/\s+/, $_);	
 			foreach $word (@line){
-				if ($word =~ m/tcr/){
+				if ($word =~ m/fha/){
 					push (@inds, $word);
 					$nind++;
 				}
@@ -1397,7 +1428,8 @@ foreach my $in (@ARGV){
 			print OUT "$word\n";
 		}
 		## read genetic data lines, write gl
-		elsif (m/^Sclu3Hs_(\d+);HRSCAF_\d+\s+(\d+)/){
+		elsif (m/^ScrX45T_(\d+)\S+\s+(\d+)/){
+			#elsif (m/^Scaffold_(\d+)_\S+\s+(\d+)/){
 			$word = "$1".":"."$2";
 			if (m/AF1=([0-9\.\-e]+)/){
 				$palt = $1;
@@ -1430,8 +1462,10 @@ foreach my $in (@ARGV){
 }
 close (OUT);
 close (OUT2);
+print "Number of loci: $nloc; number of individuals $nind\n";
 ```
-This results in 85,558 SNPs and 238 individuals for the striped genome and 87,202 SNPs and 238 individuals for the green genome. 
+
+This results in 106,287 SNPs and 602 individuals for the striped genome and 104,858 SNPs and 602 individuals for the green genome. 
  
 Next, I used `entropy` (version 1.2) to estimate genotypes. This was done with each genome and with 2 or 3 source populations (5 chains each). Initial values for MCMC were generated with [initq.R](initq.R), based on simple genotype point estimates from [gl2genest.pl](gl2genest.pl) and [runEstP.pl](runEstP.pl).
 
