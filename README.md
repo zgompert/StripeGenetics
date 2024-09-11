@@ -1467,7 +1467,7 @@ print "Number of loci: $nloc; number of individuals $nind\n";
 
 This results in 106,287 SNPs and 602 individuals for the striped genome and 104,858 SNPs and 602 individuals for the green genome. 
  
-Next, I used `entropy` (version 1.2) to estimate genotypes. This was done with each genome and with 2 or 3 source populations (5 chains each). Initial values for MCMC were generated with [initq.R](initq.R), based on simple genotype point estimates from [gl2genest.pl](gl2genest.pl) and [runEstP.pl](runEstP.pl).
+Next, I used `entropy` (version 1.2) to estimate genotypes. This was done with each genome and with 2 or 3 source populations (5 chains each). Initial values for MCMC were generated as described for Refugio.
 
 ```bash
 #!/bin/sh 
@@ -1486,7 +1486,7 @@ module load gcc/8.5.0 hdf5/1.10.7
 ## entropy 1.2
 #~/bin/entropy
 
-cd /uufs/chpc.utah.edu/common/home/gompert-group4/projects/timema_SV_balance/gen_refugio
+cd /uufs/chpc.utah.edu/common/home/gompert-group4/projects/timema_SV_balance/gen_h154
 perl forkEntropy.pl
 ```
 ```perl
@@ -1504,7 +1504,7 @@ foreach $k (2..3){
 			sleep 2;
 			$pm->start and next;
 			$out = "out_$g"."_k$k"."_ch$ch".".hdf5";
-			system "entropy -i filtered_tcr_refugio_variants_$g".".gl -w 0 -m 1 -l 2000 -b 1000 -t 5 -k $k -o $out -q $g"."_ldak$k".".txt -s 20\n";
+			system "entropy -i filtered_tcr_h154_variants_$g".".gl -w 0 -m 1 -l 2000 -b 1000 -t 5 -k $k -o $out -q $g"."_ldak$k".".txt -s 20\n";
 			$pm->finish;
 		}
 	}
@@ -1512,9 +1512,9 @@ foreach $k (2..3){
 $pm->wait_all_children;
 ```
 
-I prepared the genotypic and phenotypic data for mapping with [FormatGeno.pl](FormatGeno.pl) and [FormatPheno.R](FormatPheno.R), respectively.
+I prepared the genotypic and phenotypic data for mapping with [FormatGenoH154.pl](FormatGenoH154.pl) and [FormatPhenoH154.R](FormatPhenoH154.R), respectively.
 
-I used the LMM in gemma (version 0.95a) for genome-wide association mapping of stripe (and color) using haplotype 1 from both the green and striped genomes and with and without including chromosome 8 for the kinship matrix. Here are the full set of commands I used:
+I used the LMM in gemma (version 0.95a) for genome-wide association mapping of stripe (and color) using haplotype 1 striped genome and haplotype 2 green genome and with and without including chromosome 8 for the kinship matrix. Here are the full set of commands I used:
 
 ```bash
 #!/bin/sh 
@@ -1523,38 +1523,42 @@ module load gemma
 # 0.95a
 
 ## pattern gs, kinship includes ch8
-gemma -g  pattern_g_tcr_refugio_gs.geno -p ph_pattern.txt -gk 1 -o o_ref_pattern_gs -maf 0
-gemma -g  pattern_g_tcr_refugio_gs.geno -p ph_pattern.txt -k output/o_ref_pattern_gs.cXX.txt -lmm 4 -n 1 -o o_ref_pattern_gs -maf 0
+gemma -g  pattern_gen_h154_gs.geno -p ph_pattern.txt -gk 1 -o o_h154_pattern_gs -maf 0
+gemma -g  pattern_gen_h154_gs.geno -p ph_pattern.txt -k output/o_h154_pattern_gs.cXX.txt -lmm 4 -n 1 -o o_h154_pattern_gs -maf 0
+gemma -g  pattern_gen_h154_gs.geno -p ph_pattern.txt -k output/o_h154_pattern_gs.cXX.txt -lmm 4 -n 2 -o o_h154_pct_pattern_gs -maf 0
+gemma -g  pattern_gen_h154_gs.geno -p ph_pattern.txt -k output/o_h154_pattern_gs.cXX.txt -lmm 4 -n 3 -o o_h154_resi_pattern_gs -maf 0
 
 ## color gs, kinship includes ch8
-gemma -g  color_g_tcr_refugio_gs.geno -p ph_color.txt -gk 1 -o o_ref_color_gs -maf 0
-gemma -g  color_g_tcr_refugio_gs.geno -p ph_color.txt -k output/o_ref_color_gs.cXX.txt -lmm 4 -n 1 -o o_ref_color_gs -maf 0
-
-## pattern gs, kinship excludes ch8
-gemma -g  pattern_no8_g_tcr_refugio_gs.geno -p ph_pattern.txt -gk 1 -o o_ref_pattern_no8_gs -maf 0
-gemma -g  pattern_g_tcr_refugio_gs.geno -p ph_pattern.txt -k output/o_ref_pattern_no8_gs.cXX.txt -lmm 4 -n 1 -o o_ref_pattern_no8_gs -maf 0
-
-## color gs, kinship excludes ch8
-gemma -g  color_no8_g_tcr_refugio_gs.geno -p ph_color.txt -gk 1 -o o_ref_color_no8_gs -maf 0
-gemma -g  color_g_tcr_refugio_gs.geno -p ph_color.txt -k output/o_ref_color_no8_gs.cXX.txt -lmm 4 -n 1 -o o_ref_color_no8_gs -maf 0
+gemma -g  color_gen_h154_gs.geno -p ph_color.txt -gk 1 -o o_h154_color_gs -maf 0
+gemma -g  color_gen_h154_gs.geno -p ph_color.txt -k output/o_h154_color_gs.cXX.txt -lmm 4 -n 1 -o o_h154_color_gs -maf 0
 
 ## pattern gus, kinship includes ch8
-gemma -g  pattern_g_tcr_refugio_gus.geno -p ph_pattern.txt -gk 1 -o o_ref_pattern_gus -maf 0
-gemma -g  pattern_g_tcr_refugio_gus.geno -p ph_pattern.txt -k output/o_ref_pattern_gus.cXX.txt -lmm 4 -n 1 -o o_ref_pattern_gus -maf 0
+gemma -g  pattern_gen_h154_gus.geno -p ph_pattern.txt -gk 1 -o o_h154_pattern_gus -maf 0
+gemma -g  pattern_gen_h154_gus.geno -p ph_pattern.txt -k output/o_h154_pattern_gus.cXX.txt -lmm 4 -n 1 -o o_h154_pattern_gus -maf 0
+gemma -g  pattern_gen_h154_gus.geno -p ph_pattern.txt -k output/o_h154_pattern_gus.cXX.txt -lmm 4 -n 2 -o o_h154_pct_pattern_gus -maf 0
+gemma -g  pattern_gen_h154_gus.geno -p ph_pattern.txt -k output/o_h154_pattern_gus.cXX.txt -lmm 4 -n 3 -o o_h154_resi_pattern_gus -maf 0
 
 ## color gus, kinship includes ch8
-gemma -g  color_g_tcr_refugio_gus.geno -p ph_color.txt -gk 1 -o o_ref_color_gus -maf 0
-gemma -g  color_g_tcr_refugio_gus.geno -p ph_color.txt -k output/o_ref_color_gus.cXX.txt -lmm 4 -n 1 -o o_ref_color_gus -maf 0
+gemma -g  color_gen_h154_gus.geno -p ph_color.txt -gk 1 -o o_h154_color_gus -maf 0
+gemma -g  color_gen_h154_gus.geno -p ph_color.txt -k output/o_h154_color_gus.cXX.txt -lmm 4 -n 1 -o o_h154_color_gus -maf 0
+
+## pattern gs, kinship excludes ch8
+gemma -g  pattern_gen_h154_no8_gs.geno -p ph_pattern.txt -gk 1 -o o_h154_pattern_no8_gs -maf 0
+gemma -g  pattern_gen_h154_gs.geno -p ph_pattern.txt -k output/o_h154_pattern_no8_gs.cXX.txt -lmm 4 -n 1 -o o_h154_pattern_no8_gs -maf 0
+
+## color gs, kinship excludes ch8
+gemma -g  color_gen_h154_no8_gs.geno -p ph_color.txt -gk 1 -o o_h154_color_no8_gs -maf 0
+gemma -g  color_gen_h154_gs.geno -p ph_color.txt -k output/o_h154_color_no8_gs.cXX.txt -lmm 4 -n 1 -o o_h154_color_no8_gs -maf 0
 
 ## pattern gus, kinship excludes ch8
-gemma -g  pattern_no8_g_tcr_refugio_gus.geno -p ph_pattern.txt -gk 1 -o o_ref_pattern_no8_gus -maf 0
-gemma -g  pattern_g_tcr_refugio_gus.geno -p ph_pattern.txt -k output/o_ref_pattern_no8_gus.cXX.txt -lmm 4 -n 1 -o o_ref_pattern_no8_gus -maf 0
+gemma -g  pattern_gen_h154_no8_gus.geno -p ph_pattern.txt -gk 1 -o o_h154_pattern_no8_gus -maf 0
+gemma -g  pattern_gen_h154_gus.geno -p ph_pattern.txt -k output/o_h154_pattern_no8_gus.cXX.txt -lmm 4 -n 1 -o o_h154_pattern_no8_gus -maf 0
 
 ## color gus, kinship excludes ch8
-gemma -g  color_no8_g_tcr_refugio_gus.geno -p ph_color.txt -gk 1 -o o_ref_color_no8_gus -maf 0
-gemma -g  color_g_tcr_refugio_gus.geno -p ph_color.txt -k output/o_ref_color_no8_gus.cXX.txt -lmm 4 -n 1 -o o_ref_color_no8_gus -maf 0
+gemma -g  color_gen_h154_no8_gus.geno -p ph_color.txt -gk 1 -o o_h154_color_no8_gus -maf 0
+gemma -g  color_gen_h154_gus.geno -p ph_color.txt -k output/o_h154_color_no8_gus.cXX.txt -lmm 4 -n 1 -o o_h154_color_no8_gus -maf 0
 ```
-I then summarized the results (for pattern) in R with [summarize_gemma_gs.R](summarize_gemma_gs.R) and [summarize_gemma_gus.R](summarize_gemma_gus.R).
+I then summarized the results (for pattern) in R with [summarize_gemma_gsH154.R](summarize_gemma_gsH154.R) and [summarize_gemma_gusH154.R](summarize_gemma_gusH154.R).
 
 # Cline analyses
 
