@@ -612,11 +612,466 @@ grep ^Sc filt_o_timema1.vcf | grep PASS | grep -v [ATCG],[ATCG] > clean_o_timema
 ```
 
 
-# GWA of stripe
+# GWA of stripe, Refugio
 
 We conducted a GWA mapping analysis based on 238 *T. cristinae* from Refugio (all collected in 2016). The fastq files are in `/uufs/chpc.utah.edu/common/home/gompert-group3/data/timema_clines_rw_SV/reads_refugio`. 
 
 We aligned these data to haplotype 1 of both the green and striped genome from Refugio using `bwa` (version 0.7.17-r1198-dirty).
+
+```perl
+#!/usr/bin/perl
+#
+# alignment with bwa
+#
+
+use Parallel::ForkManager;
+my $max = 24;
+my $pm = Parallel::ForkManager->new($max);
+
+## green refugio hap 1
+#my $genome = "/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_green/HiRise/hap1/ojincantatabio-cen4120-hap1-mb-hirise-wlbll__08-15-2023__final_assembly.fasta";
+
+## stripe refugio hap 1
+my $genome = "/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap1/ojincantatabio-cen4122-hap1-mb-hirise-g4hzf__08-10-2023__final_assembly.fasta";
+
+FILES:
+foreach $fq (@ARGV){
+        $pm->start and next FILES; ## fork
+        if ($fq =~ m/(16_[a-zA-Z0-9_]+)/){
+                $ind = $1;
+        }
+        else {
+                die "Failed to match $file\n";
+        }
+        system "bwa aln -n 4 -l 20 -k 2 -t 1 -q 10 -f aln"."$ind".".sai $genome $fq\n";
+        system "bwa samse -n 1 -r \'\@RG\\tID:tcr-"."$ind\\tPL:ILLUMINA\\tLB:tcr-"."$ind\\tSM:tcr-"."$ind"."\' -f aln"."$ind".".sam $genome aln"."$ind".".sai $fq\n";
+        $pm->finish;
+}
+
+$pm->wait_all_children;
+
+```
+We then  compressed, sorted and indexed the alignment files with `samtools` (version 1.16). Here is the version for the striped genome (green is bascially the same thing).
+
+```bash
+#!/bin/sh
+#SBATCH --time=48:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=16
+#SBATCH --account=gompert
+#SBATCH --partition=notchpeak
+#SBATCH --job-name=sam2bam
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load samtools
+## samtools 1.16
+
+cd /uufs/chpc.utah.edu/common/home/gompert-group3/data/timema_clines_rw_SV/align_refugio_gs
+perl Sam2BamFork.pl *sam
+
+```
+
+```perl
+#!/usr/bin/perl
+#
+# conver sam to bam, then sort and index 
+#
+
+
+use Parallel::ForkManager;
+my $max = 16;
+my $pm = Parallel::ForkManager->new($max);
+
+FILES:
+foreach $sam (@ARGV){
+	$pm->start and next FILES; ## fork
+	$sam =~ m/^([A-Za-z0-9_\-]+\.)sam/ or die "failed to match $fq\n";
+	$base = $1;
+	system "samtools view -b -O BAM -o $base"."bam $sam\n";
+        system "samtools sort -O BAM -o $base"."sorted.bam $base"."bam\n";
+        system "samtools index -b $base"."sorted.bam\n";
+        $pm->finish;
+}
+
+$pm->wait_all_children;
+
+````
+
+We then used `samtools` and `bcftools` (version 1.16 for both) for variant calling (again with each genome).
+
+```bash
+#!/bin/sh 
+#SBATCH --time=196:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=12
+#SBATCH --account=wolf-kp
+#SBATCH --partition=wolf-kp
+#SBATCH --job-name=bcfCall
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load bcftools
+module load samtools
+## bcftools 1.16
+## samtools 1.16
+
+
+cd /uufs/chpc.utah.edu/common/home/gompert-group3/data/timema_clines_rw_SV/align_refugio_gs
+
+## index genome just needs to be done once
+#samtools faidx /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap1/ojincantatabio-cen4122-hap1-mb-hirise-g4hzf__08-10-2023__final_assembly.fasta
+
+bcftools mpileup -b bams -C 50 -d 500 -f /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_stripe/HiRise/hap1/ojincantatabio-cen4122-hap1-mb-hirise-g4hzf__08-10-2023__final_assembly.fasta -q 20 -Q 30 -I -Ou -a DP,AD,ADF,ADR | bcftools call -v -c -p 0.01 -P 0.001 -O v -o tcr_refugio_variants_gs.vcf 
+```
+I used our standard perl scripts (vcfFilter.pl) for filtering the vcf files. The one for the striped genome is. 
+
+```perl
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+
+# this program filters a vcf file based on overall sequence coverage, number of non-reference reads, number of alleles, and reverse orientation reads
+
+# usage vcfFilter.pl infile.vcf
+#
+# change the marked variables below to adjust settings
+#
+
+#### stringency variables, edits as desired
+## 238 inds, 2x
+my $minCoverage = 476; # minimum number of sequences; DP
+my $minAltRds = 10; # minimum number of sequences with the alternative allele; AC
+my $notFixed = 1.0; # removes loci fixed for alt; AF
+my $bqrs = 0.005; # p-value base quality rank sum test; BaseQRankSum
+my $mqrs = 0.005; # p-value mapping quality rank sum test; MQRankSum
+my $rprs = 0.005; # p-value read position rank sum test; ReadPosRankSum
+my $qd = 2; # minimum ratio of variant confidenct to non reference read depth; QD
+my $mq = 30; # minimum mapping quality; MQ
+my $miss = 47; # maximum number of individuals with no data
+##### this set is for GBS
+my $d;
+
+my @line;
+
+my $in = shift(@ARGV);
+open (IN, $in) or die "Could not read the infile = $in\n";
+$in =~ m/^([a-zA-Z_0-9\-]+\.vcf)$/ or die "Failed to match the variant file\n";
+open (OUT, "> filtered2x_$1") or die "Could not write the outfile\n";
+
+my $flag = 0;
+my $cnt = 0;
+
+while (<IN>){
+        chomp;
+        $flag = 1;
+        if (m/^\#/){ ## header row, always write
+                $flag = 1;
+        }
+        elsif (m/^Sc/){ ## this is a sequence line, you migh need to edit this reg. expr.
+                $flag = 1;
+                $d = () = (m/\d\/\d:0,0,0:0/g); ## for bcftools call
+                if ($d >= $miss){
+                        $flag = 0;
+                        ##print "fail missing : ";
+                }
+                if (m/[ACTGN]\,[ACTGN]/){ ## two alternative alleles identified
+                        $flag = 0;
+                        #print "fail allele : ";
+                }
+                @line = split(/\s+/,$_);
+                if(length($line[3]) > 1 or length($line[4]) > 1){
+                        $flag = 0;
+                        #print "fail INDEL : ";
+                }
+                m/DP=(\d+)/ or die "Syntax error, DP not found\n";
+                if ($1 < $minCoverage){
+                        $flag = 0;
+                        #print "fail DP : ";
+               }
+## bcftools call version
+
+                m/DP4=\d+,\d+,(\d+),(\d+)/ or die "Syntax error DP4 not found\n";
+                if(($1 + $2) < $minAltRds){
+                        $flag = 0;
+                }
+                m/AF1*=([0-9\.e\-]+)/ or die "Syntax error, AF not found\n";
+                if ($1 == $notFixed){
+                        $flag = 0;
+                #       print "fail AF : ";
+                }
+
+## bcftools call verions, these are p-values, use 0.01
+                if(m/BQB=([0-9e\-\.]*)/){
+                        if ($1 < 0.005){
+                                $flag = 0;
+#                               print "fail BQRS : ";
+                        }
+                }
+                if(m/MQB=([0-9e\-\.]*)/){
+                        if ($1 < 0.005){
+                                $flag = 0;
+#                               print "fail MQRS : ";
+                        }
+                }
+                if(m/RPB=([0-9e\-\.]*)/){
+                        if ($1 < 0.005){
+                                $flag = 0;
+#                               print "fail RPRS : ";
+                        }
+                }
+                if(m/MQ=([0-9\.]+)/){
+                        if ($1 < $mq){
+                                $flag = 0;
+#                               print "fail MQ : ";
+                        }
+                }
+                else{
+                        $flag = 0;
+                        print "faile no MQ : ";
+                }
+                if ($flag == 1){
+                        $cnt++; ## this is a good SNV
+                }
+        }
+        else{
+                print "Warning, failed to match the chromosome or scaffold name regular expression for this line\n$_\n";
+                $flag = 0;
+        }
+        if ($flag == 1){
+                print OUT "$_\n";
+        }
+}
+close (IN);
+close (OUT);                                             
+``
+I then applied the depth filter from `filterSomeMore.pl`.
+
+```perl
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+
+# filter vcf files
+
+
+### stringency variables, edits as desired
+my $maxCoverage =  1814; # maximum depth to avoid repeats, mean + 2sd
+
+my $in = shift(@ARGV);
+open (IN, $in) or die "Could not read the infile = $in\n";
+$in =~ m/^([a-zA-Z0-9_]+\.vcf)$/ or die "Failed to match the variant file\n";
+open (OUT, "> morefilter_$1") or die "Could not write the outfile\n";
+
+my $flag = 0;
+my $cnt = 0;
+
+while (<IN>){
+        chomp;
+        $flag = 1;
+        print "\n";
+        if (m/^\#/){ ## header row, always write
+                $flag = 1;
+        }
+        elsif (m/^Sc/){ ## this is a sequence line, you migh need to edit this reg. expr.
+                $flag = 1;
+                m/DP=(\d+)/ or die "Syntax error, DP not found\n";
+                if ($1 > $maxCoverage){
+                        $flag = 0;
+                        print "fail DP\n";
+                }
+                if ($flag == 1){
+                        $cnt++; ## this is a good SNV
+                }
+        }
+        else{
+                print "Warning, failed to match the chromosome or scaffold name regular expression for this line\n$_\n";
+                $flag = 0;
+        }
+        if ($flag == 1){
+                print OUT "$_\n";
+        }
+}
+close (IN);
+close (OUT);
+
+print "Finished filtering $in\nRetained $cnt variable loci\n";
+```
+
+Lastly for variant generation, I converted the vcf to gl format and applied a minor allele frequency (0.01) filter:
+
+```bash
+perl vcf2glSamt.pl 0.01 morefilter_filtered2x_tcr_refugio_variants.vcf
+```
+
+```perl
+#!/usr/bin/perl
+
+my @line = ();
+my $word;
+my $nind = 0;
+my $nloc = 0;
+my $first = 1; ## first vcf file, get ids from here
+my $out = "filtered_tcr_refugio_variants_gs.gl";
+
+open (OUT, "> $out") or die "Could not write the outfile\n";
+
+if ($out =~ s/gl/txt/){
+	open (OUT2, "> af_$out") or die "Count not write the alt. af file\n";
+}
+
+my $maf = shift (@ARGV);
+
+foreach my $in (@ARGV){
+	open (IN, $in) or die "Could not read the vcf file\n";
+	while (<IN>){
+		chomp;
+		## get individual ids
+		if (m/^#CHROM/ & ($first == 1)){
+			@line = split(m/\s+/, $_);	
+			foreach $word (@line){
+				if ($word =~ m/tcr/){
+					push (@inds, $word);
+					$nind++;
+				}
+			}
+			print OUT "$nind $nloc\n";
+			$word = join (" ", @inds);
+			print OUT "$word\n";
+		}
+		## read genetic data lines, write gl
+		elsif (m/^Sclu3Hs_(\d+);HRSCAF_\d+\s+(\d+)/){
+			$word = "$1".":"."$2";
+			if (m/AF1=([0-9\.\-e]+)/){
+				$palt = $1;
+				if ($palt > 0.5){
+					$p = 1 - $palt;
+				}
+				else {
+					$p = $palt;
+				}
+				#print "$word = $p\n";
+				if ($p >= $maf){ ## keep this locus
+					$nloc++;
+					print OUT "$word";
+					@line = split(m/\s+/, $_);
+					$i = 0;
+					foreach $word (@line){
+						if ($word =~ m/^\d\/\d\:/){
+							$word =~ m/(\d+),(\d+),(\d+)/ or die "failed match $word \n";
+							print OUT " $1 $2 $3";
+						}
+				
+					}
+					print OUT "\n";
+					print OUT2 "$palt\n"; ## print p before converting to maf
+				}
+			}
+		}	
+		
+	}
+}
+close (OUT);
+close (OUT2);
+```
+This results in 85,558 SNPs and 238 individuals for the striped genome and 87,202 SNPs and 238 individuals for the green genome. 
+ 
+Next, I used `entropy` (version 1.2) to estimate genotypes. This was done with each genome and with 2 or 3 source populations (5 chains each). Initial values for MCMC were generated with [initq.R](initq.R), based on simple genotype point estimates from [gl2genest.pl](gl2genest.pl) and [runEstP.pl](runEstP.pl).
+
+```bash
+#!/bin/sh 
+#SBATCH --time=240:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=18
+#SBATCH --account=gompert-np
+#SBATCH --partition=gompert-np
+#SBATCH --job-name=entropy
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module purge
+module load gcc/8.5.0 hdf5/1.10.7
+
+## entropy 1.2
+#~/bin/entropy
+
+cd /uufs/chpc.utah.edu/common/home/gompert-group4/projects/timema_SV_balance/gen_refugio
+perl forkEntropy.pl
+```
+```perl
+#!/usr/bin/perl
+# fork script for entropy 
+
+use Parallel::ForkManager;
+my $max = 30;
+my $pm = Parallel::ForkManager->new($max);
+
+
+foreach $k (2..3){
+	foreach $ch (0..4){ 
+		foreach $g ("gs","gus"){
+			sleep 2;
+			$pm->start and next;
+			$out = "out_$g"."_k$k"."_ch$ch".".hdf5";
+			system "entropy -i filtered_tcr_refugio_variants_$g".".gl -w 0 -m 1 -l 2000 -b 1000 -t 5 -k $k -o $out -q $g"."_ldak$k".".txt -s 20\n";
+			$pm->finish;
+		}
+	}
+}
+$pm->wait_all_children;
+```
+
+I prepared the genotypic and phenotypic data for mapping with [FormatGeno.pl](FormatGeno.pl) and [FormatPheno.R](FormatPheno.R), respectively.
+
+I used the LMM in gemma (version 0.95a) for genome-wide association mapping of stripe (and color) using haplotype 1 from both the green and striped genomes and with and without including chromosome 8 for the kinship matrix. Here are the full set of commands I used:
+
+```bash
+#!/bin/sh 
+
+module load gemma
+# 0.95a
+
+## pattern gs, kinship includes ch8
+gemma -g  pattern_g_tcr_refugio_gs.geno -p ph_pattern.txt -gk 1 -o o_ref_pattern_gs -maf 0
+gemma -g  pattern_g_tcr_refugio_gs.geno -p ph_pattern.txt -k output/o_ref_pattern_gs.cXX.txt -lmm 4 -n 1 -o o_ref_pattern_gs -maf 0
+
+## color gs, kinship includes ch8
+gemma -g  color_g_tcr_refugio_gs.geno -p ph_color.txt -gk 1 -o o_ref_color_gs -maf 0
+gemma -g  color_g_tcr_refugio_gs.geno -p ph_color.txt -k output/o_ref_color_gs.cXX.txt -lmm 4 -n 1 -o o_ref_color_gs -maf 0
+
+## pattern gs, kinship excludes ch8
+gemma -g  pattern_no8_g_tcr_refugio_gs.geno -p ph_pattern.txt -gk 1 -o o_ref_pattern_no8_gs -maf 0
+gemma -g  pattern_g_tcr_refugio_gs.geno -p ph_pattern.txt -k output/o_ref_pattern_no8_gs.cXX.txt -lmm 4 -n 1 -o o_ref_pattern_no8_gs -maf 0
+
+## color gs, kinship excludes ch8
+gemma -g  color_no8_g_tcr_refugio_gs.geno -p ph_color.txt -gk 1 -o o_ref_color_no8_gs -maf 0
+gemma -g  color_g_tcr_refugio_gs.geno -p ph_color.txt -k output/o_ref_color_no8_gs.cXX.txt -lmm 4 -n 1 -o o_ref_color_no8_gs -maf 0
+
+## pattern gus, kinship includes ch8
+gemma -g  pattern_g_tcr_refugio_gus.geno -p ph_pattern.txt -gk 1 -o o_ref_pattern_gus -maf 0
+gemma -g  pattern_g_tcr_refugio_gus.geno -p ph_pattern.txt -k output/o_ref_pattern_gus.cXX.txt -lmm 4 -n 1 -o o_ref_pattern_gus -maf 0
+
+## color gus, kinship includes ch8
+gemma -g  color_g_tcr_refugio_gus.geno -p ph_color.txt -gk 1 -o o_ref_color_gus -maf 0
+gemma -g  color_g_tcr_refugio_gus.geno -p ph_color.txt -k output/o_ref_color_gus.cXX.txt -lmm 4 -n 1 -o o_ref_color_gus -maf 0
+
+## pattern gus, kinship excludes ch8
+gemma -g  pattern_no8_g_tcr_refugio_gus.geno -p ph_pattern.txt -gk 1 -o o_ref_pattern_no8_gus -maf 0
+gemma -g  pattern_g_tcr_refugio_gus.geno -p ph_pattern.txt -k output/o_ref_pattern_no8_gus.cXX.txt -lmm 4 -n 1 -o o_ref_pattern_no8_gus -maf 0
+
+## color gus, kinship excludes ch8
+gemma -g  color_no8_g_tcr_refugio_gus.geno -p ph_color.txt -gk 1 -o o_ref_color_no8_gus -maf 0
+gemma -g  color_g_tcr_refugio_gus.geno -p ph_color.txt -k output/o_ref_color_no8_gus.cXX.txt -lmm 4 -n 1 -o o_ref_color_no8_gus -maf 0
+```
+I then summarized the results (for pattern) in R with [summarize_gemma_gs.R](summarize_gemma_gs.R) and [summarize_gemma_gus.R](summarize_gemma_gus.R).
+
+# GWA of stripe, Hwy 154
+
+We conducted an additional GWA mapping analysis based on 602 *T. cristinae* from Hwy 154, specifically FHA (see [Comeault et al., 2015](https://www.cell.com/current-biology/fulltext/S0960-9822(15)00661-2)). The fastq files are in `/uufs/chpc.utah.edu/common/home/gompert-group3/data/timema_clines_rw_SV/reads_fha_mapping_sample`. 
+
+We aligned these data to haplotype 1 of the striped genome and haplotype 2 of the green genome Hwy 154 (VP A) using `bwa` (version 0.7.17-r1198-dirty).
 
 ```perl
 #!/usr/bin/perl
