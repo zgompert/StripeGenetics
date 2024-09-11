@@ -1582,39 +1582,62 @@ I am using a number of analyses for functional characterization of the SVs based
 
 I am using `GENESPACE` (version 1.3.1) (see [Lovell et al. 2022](https://elifesciences.org/articles/78526) and [this GitHub page](https://github.com/jtlovell/GENESPACE)) to look at syteny in terms of protein/gene sequences. Here is code for an analysis in progress (I need to update this with new versions of files).
 
+First, I generated the input amino acid and gene position files from the `BRAKER3` annotations.
+
+```{bash}
+#!/usr/bin/bash
+
+##################
+## grab everything
+cd /scratch/general/nfs1/u6000989/temp
+cp ~/../gompert-group4/data/timema/hic_genomes/Annotation/t_crist_refug_green_h1/braker/braker.aa t_crist_refug_green_h1.fa
+cp ~/../gompert-group4/data/timema/hic_genomes/Annotation/t_crist_refug_stripe_h1/braker/braker.aa t_crist_refug_stripe_h1.fa
+cp ~/../gompert-group4/data/timema/hic_genomes/Annotation/t_crist_hyw154_green_h2/braker/braker.aa t_crist_h154_green_h2.fa
+cp ~/../gompert-group4/data/timema/hic_genomes/Annotation/t_crist_hyw154_stripe_h1/braker/braker.aa t_crist_h154_stripe_h1.fa
+cp ~/../gompert-group4/data/timema/hic_genomes/Annotation/t_crist_hyw154_green_h1/braker/braker.aa t_crist_h154_green_h1.fa
+cp ~/../gompert-group4/data/timema/hic_genomes/Annotation/t_crist_refug_green_h2/braker/braker.aa t_crist_refug_green_h2.fa
+cp ~/../gompert-group4/data/timema/hic_genomes/Annotation/t_crist_refug_stripe_h2/braker/braker.aa t_crist_refug_stripe_h2.fa
+cp ~/../gompert-group4/data/timema/hic_genomes/Annotation/t_crist_hyw154_stripe_h2/braker/braker.aa t_crist_h154_stripe_h2.fa
+
+
+## fix format
+perl -p -i -e 's/\.t[0-9]//' *fa
+
+grep "gene" ~/../gompert-group4/data/timema/hic_genomes/Annotation/t_crist_refug_green_h1/braker/braker.gff3 | cut -f 1,4,5,9 | perl -p -i -e 's/ID=//' | perl -p -i -e 's/;//' > t_crist_refug_green_h1.bed &
+grep "gene" ~/../gompert-group4/data/timema/hic_genomes/Annotation/t_crist_refug_stripe_h1/braker/braker.gff3 | cut -f 1,4,5,9 | perl -p -i -e 's/ID=//' | perl -p -i -e 's/;//' > t_crist_refug_stripe_h1.bed &
+grep "gene" ~/../gompert-group4/data/timema/hic_genomes/Annotation/t_crist_hyw154_green_h2/braker/braker.gff3 | cut -f 1,4,5,9 | perl -p -i -e 's/ID=//' | perl -p -i -e 's/;//' > t_crist_h154_green_h2.bed &
+grep "gene" ~/../gompert-group4/data/timema/hic_genomes/Annotation/t_crist_hyw154_stripe_h1/braker/braker.gff3 | cut -f 1,4,5,9 | perl -p -i -e 's/ID=//' | perl -p -i -e 's/;//' > t_crist_h154_stripe_h1.bed &
+grep "gene" ~/../gompert-group4/data/timema/hic_genomes/Annotation/t_crist_hyw154_green_h1/braker/braker.gff3 | cut -f 1,4,5,9 | perl -p -i -e 's/ID=//' | perl -p -i -e 's/;//' > t_crist_h154_green_h1.bed &
+grep "gene" ~/../gompert-group4/data/timema/hic_genomes/Annotation/t_crist_refug_green_h2/braker/braker.gff3 | cut -f 1,4,5,9 | perl -p -i -e 's/ID=//' | perl -p -i -e 's/;//' > t_crist_refug_green_h2.bed &
+grep "gene" ~/../gompert-group4/data/timema/hic_genomes/Annotation/t_crist_refug_stripe_h2/braker/braker.gff3 | cut -f 1,4,5,9 | perl -p -i -e 's/ID=//' | perl -p -i -e 's/;//' > t_crist_refug_stripe_h2.bed &
+grep "gene" ~/../gompert-group4/data/timema/hic_genomes/Annotation/t_crist_hyw154_stripe_h2/braker/braker.gff3 | cut -f 1,4,5,9 | perl -p -i -e 's/ID=//' | perl -p -i -e 's/;//' > t_crist_h154_stripe_h2.bed &
+
+```
+
+I then ran `GENESPACE`. I did this using all 8 genomes and 5 genomes (haplotype 1 from each and also 2 from the green Hwy 154 individual). The reason for the subanalysis with 5 was that, with respect to chromosome 8, that covered the notable variation in chromosomal rearrangments from the comparative alignments. I created plots for 4 genomes (one haplotype per morph and mountain) from the 5 genome analysis. 
+
 ```{bash}
 module load orthofinder
 ```
+Core commands.
 
 ```{R}
 library(GENESPACE)
+
+##############################################
+## see format_genespace_ch8.sh
+
 ###############################################
-genomeRepo<-"/scratch/general/nfs1/u6000989/rawGenomes"
-wd<-"/scratch/general/nfs1/u6000989/"
+wd<-"/scratch/general/nfs1/u6000989/TimemaCh8_5/"
 path2mcscanx<-"~/bin/"
 
-# -- download raw data from NCBI for human and chicken genomes UPDATE
-dir.create(genomeRepo)
-rawFiles <- download_exampleData(filepath = genomeRepo)
-
-# -- parse the annotations to fastas with headers that match a gene bed file
-parsedPaths <- parse_annotations(
-  rawGenomeRepo = genomeRepo,
-  genomeDirs = c("human", "chicken"),
-  genomeIDs = c("human", "chicken"),
-  presets = "ncbi",
-  genespaceWd = wd)
-
 # -- initalize the run and QC the inputs
-
-
-gpar <- init_genespace(
-  wd = wd, 
-  path2mcscanx = path2mcscanx)
+gpar<-init_genespace(wd=wd,path2mcscanx=path2mcscanx)
 
 ## need to set this
 gpar$shellCalls$orthofinder<-"orthofinder"
 
 # -- accomplish the run
-out <- run_genespace(gpar)
+out <- run_genespace(gpar, overwrite = T)
 ```
+See xxx and xxx for the full scripts.
