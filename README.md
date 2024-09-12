@@ -1614,7 +1614,7 @@ grep "gene" ~/../gompert-group4/data/timema/hic_genomes/Annotation/t_crist_hyw15
 
 ```
 
-I then ran `GENESPACE`. I did this using all 8 genomes and 5 genomes (haplotype 1 from each and also 2 from the green Hwy 154 individual). The reason for the subanalysis with 5 was that, with respect to chromosome 8, that covered the notable variation in chromosomal rearrangments from the comparative alignments. I created plots for 4 genomes (one haplotype per morph and mountain) from the 5 genome analysis. 
+I then ran `GENESPACE`. I did this using all 8 genomes and 4 genomes (haplotype 1 from each and also 2 from the green Hwy 154 individual). The reason for the subanalysis with 4 was that, with respect to chromosome 8, that covered the core variation in chromosomal rearrangments from the comparative alignments (while not overwhelming the plots with additional SV that was not clearly associated with color pattern). Core downstream analyses were based on the 4 genome analysis, the 8 genome analysis was simply done for completeness in terms of the ribbon plot.
 
 ```{bash}
 module load orthofinder
@@ -1640,4 +1640,4 @@ gpar$shellCalls$orthofinder<-"orthofinder"
 # -- accomplish the run
 out <- run_genespace(gpar, overwrite = T)
 ```
-See xxx and xxx for the full scripts.
+See xxx and (genespace_ch8_8.R)[genespace_ch8_8.R] for the full scripts.
