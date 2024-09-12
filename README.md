@@ -304,7 +304,7 @@ RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsR
 
 RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_green/HiRise/hap2/ojincantatabio-cen4120-hap2-mb-hirise-bn0ko__08-15-2023__final_assembly.fasta
 ```
-We then summarized the identified TEs in `R`, see [SummarizeTEData_phased.R](SummarizeTEData_phased.R). XXX.
+We then summarized the identified TEs in `R`, see [SummarizeTEData_phased.R](SummarizeTEData_phased.R). We focused on identifying and summarizing complex repeats, where simple repeates were defined as those with an microsattelite repeate structure, e.g, Motif:(TAA)n, or tagged as A-rich, G-rich, GA-rich or rnd. Annotations were summarized within the chr8 SVs and specifically within 5000 bp of the identified SV breakpoints/bounds.
 
 # Demographic inference
 
