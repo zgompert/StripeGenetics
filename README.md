@@ -1640,4 +1640,4 @@ gpar$shellCalls$orthofinder<-"orthofinder"
 # -- accomplish the run
 out <- run_genespace(gpar, overwrite = T)
 ```
-See xxx and (genespace_ch8_8.R)[genespace_ch8_8.R] for the full scripts.
+See xxx and [genespace_ch8_8.R](genespace_ch8_8.R) for the full scripts.
