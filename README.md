@@ -189,19 +189,22 @@ busco -i ../../../t_crist_gus_hap_cen4280/HiRise/Hap1/ojincantatabio-cen4280-hap
 
 ## amino acids
 busco -i braker.aa -m prot -o busco_aa_out -l insecta_odb10
-```
-We have very high BUSCO scores for the genomes, and more modest scores for the found genes, which is to be expected (braker is not designed to maximize BUSCOs, but rather to identify genes with high confidence) (more details are in busco_genome_out and busco_aa_out).
 
-| Genome | Genome % complete | AA % complete |
-|--------|-------------------|---------------|
-| t_crist_hyw154_stripe_h1 | 99.5 | 65.1 |
-| t_crist_hyw154_stripe_h2 | 99.4 | -- |
-| t_crist_hyw154_green_h1 | 99.1 | 67.0 |
-| t_crist_hyw154_green_h2 | 99.5 | 70.0 |
-| t_crist_refug_green_h1 | 99.4 | 70.0 |
-| t_crist_refug_green_h2 | 99.2 | 70.9 |
-| t_crist_refug_stripe_h1 | 99.2 | 69.0 |
-| t_crist_refug_stripe_h2 | 90.3 | 65.9 |
+## Augustus amino acids
+busco -i augustus.hints.aa -m prot -o busco_augustus_aa_out -l insecta_odb10
+```
+We have very high BUSCO scores for the genomes, and more modest scores for the found genes, which is to be expected (braker is not designed to maximize BUSCOs, but rather to identify genes with high confidence) (more details are in busco_genome_out and busco_aa_out). I also looked at BUSCO scores for the Augustus protein predictions, which includes many more predicted genes but also lower confidence genes.
+
+| Genome | Genome % complete | AA % complete | Augustus AA & complete |
+|--------|-------------------|---------------| -----------------------|
+| t_crist_hyw154_stripe_h1 | 99.5 | 65.1 | 92.6 |
+| t_crist_hyw154_stripe_h2 | 99.4 | 65.9 | 93.3 |
+| t_crist_hyw154_green_h1 | 99.1 | 67.0 | 93.2 |
+| t_crist_hyw154_green_h2 | 99.5 | 70.0 | 95.3 |
+| t_crist_refug_green_h1 | 99.4 | 70.0 | 96.1 |
+| t_crist_refug_green_h2 | 99.2 | 70.9 | 96.5 |
+| t_crist_refug_stripe_h1 | 99.2 | 69.0 | 95.9 |
+| t_crist_refug_stripe_h2 | 99.3 | 65.9 | 93.3 |
 
 I am using `interproscan` (version 5.63) for functional annotation. This is being run on the amino acid sequence predictions from `braker` (the output files require a small bit of reformatting to get rid of the stop codons). Here is the version of the script for one of the genomes.
 
