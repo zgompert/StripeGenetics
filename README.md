@@ -195,7 +195,7 @@ busco -i augustus.hints.aa -m prot -o busco_augustus_aa_out -l insecta_odb10
 ```
 We have very high BUSCO scores for the genomes, and more modest scores for the found genes, which is to be expected (braker is not designed to maximize BUSCOs, but rather to identify genes with high confidence) (more details are in busco_genome_out and busco_aa_out). I also looked at BUSCO scores for the Augustus protein predictions, which includes many more predicted genes but also lower confidence genes.
 
-| Genome | Genome % complete | AA % complete | Augustus AA & complete |
+| Genome | Genome % complete | AA % complete | Augustus AA % complete |
 |--------|-------------------|---------------| -----------------------|
 | t_crist_hyw154_stripe_h1 | 99.5 | 65.1 | 92.6 |
 | t_crist_hyw154_stripe_h2 | 99.4 | 65.9 | 93.3 |
