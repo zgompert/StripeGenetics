@@ -1,11 +1,11 @@
 # StripeGenetics
-Genomic analyses of color-pattern in *Timema cristinae*, with a focus on comparative genetic architecture between Refugio and Hwy 154
+Genomic analyses of color-pattern in *Timema cristinae*, with a focus on comparative genetic architecture between Refugio and Hwy 154. A frozen version of scripts and data associated with this project are on [Zenodo](https://zenodo.org/records/14758718).
 
 # Genomes
 
 We have four pairs of phased genomes for *T. cristinae*. Two are from Refugio and two are from Hwy 154--one from each mountain is for a striped morph and one is for a green (unstriped) morph. This were all generated from PacBio data combined with Illumina/Omni-C.
 
-The data are here:
+The data are here (and available from NCBI, BioProject accessions PRJNA1208027-PRJNA1208034):
 
 Refugio striped (CEN4122) [report](https://github.com/zgompert/StripeGenetics/blob/main/CEN4122_report.html)
 
