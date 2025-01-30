@@ -140,7 +140,7 @@ foreach $hal (@ARGV){
 $pm->wait_all_children;
 ```
 
-We then made synteny and alignment plots in R, see [SynPlotsRefugio.R](https://github.com/zgompert/StripeGenetics/blob/main/SynPlotsRefugioPlus.R).
+We then made synteny and alignment plots in R, see [SynPlotsRefugio.R](https://github.com/zgompert/StripeGenetics/blob/main/SynPlotsRefugio.R) and [SynPlotsHwy154.R](https://github.com/zgompert/StripeGenetics/blob/main/SynPlotsHwy154.R).
 
 # Genome annotations
 
