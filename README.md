@@ -1735,3 +1735,5 @@ gpar$shellCalls$orthofinder<-"orthofinder"
 out <- run_genespace(gpar, overwrite = T)
 ```
 See [genespace_ch8_4.R](genespace_ch8_4.R) and [genespace_ch8_8.R](genespace_ch8_8.R) for the full scripts for the 4 genome and 8 genome analyses, respectively.
+
+The script [GeneSVCounts.R](GeneSVCounts.R) contains my analyses counting genes in the inverted translocations in terms of unions and intersections of different sets of genomes. This includes a variety of approaches and definitions of the number of genes in a syntenic region.
