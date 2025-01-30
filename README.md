@@ -268,6 +268,55 @@ blastn -query combined_CDS.txt -db ../t_crist_gs_hap_cen4119/HiRise/Hap2/final_a
 
 I summarized these hits with the perl script [ParseBlast.pl](ParseBlast.pl). 
 
+I also compared genomes in terms of the protein descriptions and gene ontology data for genes found within the inverted translocations we detected. 
+
+The gene ontology information was extracted as follows:
+
+```bash
+#!/usr/bin/bash
+
+# script for getting GO terms for SV genes, note that the output is not in the same order
+# as the input, need another step to make the tables
+
+ml python3
+
+## generate GO_genes* files with GO IDs given bounds of SV and interpro_aa.gff3 files
+perl SVGO_refugio_gs_h1.pl
+perl SVGO_refugio_gus_h1.pl
+perl SVGO_h154_gs_h1.pl
+perl SVGO_h154_gus_h2.pl
+
+## get unique GO terms per gene ID 
+sort GO_genes_refug_gs_h1.txt  | uniq > uni_GO_genes_refug_gs_h1.txt
+sort GO_genes_refug_gus_h1.txt  | uniq > uni_GO_genes_refug_gus_h1.txt
+sort GO_genes_h154_gs_h1.txt  | uniq > uni_GO_genes_h154_gs_h1.txt
+sort GO_genes_h154_gus_h2.txt  | uniq > uni_GO_genes_h154_gus_h2.txt
+
+## grab 2nd column, GO terms only
+cut -f 2 -d " " uni_GO_genes_refug_gs_h1.txt > GO_clean_genes_refug_gs_h1.txt
+cut -f 2 -d " " uni_GO_genes_refug_gus_h1.txt > GO_clean_genes_refug_gus_h1.txt
+cut -f 2 -d " " uni_GO_genes_h154_gs_h1.txt > GO_clean_genes_h154_gs_h1.txt
+cut -f 2 -d " " uni_GO_genes_h154_gus_h2.txt > GO_clean_genes_h154_gus_h2.txt
+
+## use wr_hier.py from goatools (got this with pip install goatools)
+wr_hier.py --max_indent=1 -i GO_clean_genes_refug_gs_h1.txt -o out_GO_clean_genes_refug_gs_h1.txt
+wr_hier.py --max_indent=1 -i GO_clean_genes_refug_gus_h1.txt -o out_GO_clean_genes_refug_gus_h1.txt
+wr_hier.py --max_indent=1 -i GO_clean_genes_h154_gs_h1.txt -o out_GO_clean_genes_h154_gs_h1.txt
+wr_hier.py --max_indent=1 -i GO_clean_genes_h154_gus_h2.txt -o out_GO_clean_genes_h154_gus_h2.txt
+```
+This was then summarized with [CreateGoTable.pl](CreateGoTable.pl). 
+
+Protein descriptions were extracted as with [SVgenes_h154_gs_h1.pl](SVgenes_h154_gs_h1.pl), [SVgenes_h154_gus_h2.pl](SVgenes_h154_gs_h1.pl), [SVgenes_refugio_gs_h1.pl](SVgenes_refugio_gs_h1.pl), [SVgenes_refugio_gus_h1.pl](SVgenes_refugio_gus_h1.pl) and the following shell commands and and then compared with [overlap.R](overlap.R).
+
+```bash
+## unique estimated proteins
+cat SV_genes_h154_gs_h1.txt | perl -p -i -e 's/^\S+\s+//' | sort | uniq > uniq_SV_genes_h154_gs_h1.txt
+cat SV_genes_h154_gus_h2.txt | perl -p -i -e 's/^\S+\s+//' | sort | uniq > uniq_SV_genes_h154_gus_h2.txt
+cat SV_genes_refug_gs_h1.txt | perl -p -i -e 's/^\S+\s+//' | sort | uniq > uniq_SV_genes_refug_gs_h1.txt
+cat SV_genes_refug_gus_h1.txt | perl -p -i -e 's/^\S+\s+//' | sort | uniq > uniq_SV_genes_refug_gus_h1.txt
+```
+
+
 # Annotation of transposable elements
 
 We re-ran `RepeatMasker` (version 4.0.7) with the same *T. cristinae* repeat library to annotate each of the 8 haploid genomes for repeats (this just involves re-running the same analysis used for masking with different options):
