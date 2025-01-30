@@ -1,6 +1,6 @@
 library(GENESPACE)
 
-##############################################
+#############################################
 ## see format_genespace_ch8.sh
 
 ###############################################
@@ -54,8 +54,10 @@ ripd <- plot_riparian(
 	useRegions = FALSE,
 	invertTheseChrs = invchr,
   	refGenome = "t_crist_h154_green_h2",
-	genomeIDs = c("t_crist_h154_green_h2","t_crist_h154_stripe_h1",
+	genomeIDs = c("t_crist_h154_stripe_h1","t_crist_h154_green_h2",
                 "t_crist_refug_green_h1","t_crist_refug_stripe_h1"),
+	#genomeIDs = c("t_crist_h154_green_h2","t_crist_h154_stripe_h1",
+        #        "t_crist_refug_green_h1","t_crist_refug_stripe_h1"),
 	backgroundColor = NULL)
 dev.off()
 
@@ -73,11 +75,15 @@ xvx_refugio <- subset(qreturn[["t_crist_refug_green_h1, Scaffold_3__1_contigs__l
 xvx_stripe <- subset(qreturn[["t_crist_refug_stripe_h1, Scaffold_11__3_contigs__length_97865747: 0-Inf"]], genome2 == "t_crist_h154_stripe_h1")
 xvx_green<- subset(qreturn[["t_crist_refug_green_h1, Scaffold_3__1_contigs__length_98311894: 0-Inf"]], genome2 == "t_crist_h154_green_h2")
 
+## notes are from manual inspection with genomeview browser 
+
 ## pro-corazonin
-## g900 = stripe refugio
-## g4303 = green refugio
-## g933 = stripe h154
-## g3288 = green h154
+## g900 = stripe refugio = 2 exons, 12,005 bp intron... but only 4207 in stripe hap 2 
+## so not a consistent difference with green... all others are in fact ~4000 bp, always appears single copy
+## g4303 = green refugio = 2 exons, 4201 bp intron
+## g933 = stripe h154 = 2 exons, 3469 bp intron
+## g3288 = green h154 = 2 exons, 4382 bp intron
+
 
 corz_refugio<-which(xvx_refugio$id1=="g4303")
 corz_h154<-which(xvx_h154$id1=="g3288")
@@ -86,11 +92,15 @@ corz_green<-which(xvx_green$id1=="g4303")
 
 ## Ecdysteroid kinase-like family
 ## g890 and 691 = stripe refugio
+## both 1 exon
 ## g4118 and 4081 = green refugio ... Ecdysone receptor 4201 but only in this genome
+## both 1 exon, receptor has 8 exons
 ## g919 and 893 = stripe h154
+## both 1 exon
 ## g3302 = green h154
+## 1 exon
 ecdys_refugio<-which((xvx_refugio$id1=="g4118") | (xvx_refugio$id1=="g4081"))
-ecdys_h154<-which(xvx_h154$id1=="g3302")
+ecdys_h154<-which((xvx_h154$id1=="g3302") | (xvx_h154$id1=="g3337"))
 ecdys_stripe<-which((xvx_stripe$id1=="g890") | (xvx_stripe$id1=="g691"))
 ecdys_green<-which((xvx_green$id1=="g4118") | (xvx_green$id1=="g4081"))
 
