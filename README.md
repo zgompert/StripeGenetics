@@ -268,7 +268,7 @@ blastn -query combined_CDS.txt -db ../t_crist_gs_hap_cen4119/HiRise/Hap2/final_a
 
 I summarized these hits with the perl script [ParseBlast.pl](ParseBlast.pl). 
 
-I also compared genomes in terms of the protein descriptions and gene ontology data for genes found within the inverted translocations we detected. 
+I also compared genomes in terms of the protein descriptions and gene ontology data for genes found within the inverted translocations we detected (see the GENESPACE analyses below for some additional gene-based comparisons). 
 
 The gene ontology information was extracted as follows:
 
@@ -316,7 +316,6 @@ cat SV_genes_refug_gs_h1.txt | perl -p -i -e 's/^\S+\s+//' | sort | uniq > uniq_
 cat SV_genes_refug_gus_h1.txt | perl -p -i -e 's/^\S+\s+//' | sort | uniq > uniq_SV_genes_refug_gus_h1.txt
 ```
 
-
 # Annotation of transposable elements
 
 We re-ran `RepeatMasker` (version 4.0.7) with the same *T. cristinae* repeat library to annotate each of the 8 haploid genomes for repeats (this just involves re-running the same analysis used for masking with different options):
@@ -356,7 +355,9 @@ RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsR
 
 RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_refug_green/HiRise/hap2/ojincantatabio-cen4120-hap2-mb-hirise-bn0ko__08-15-2023__final_assembly.fasta
 ```
-We then summarized the identified TEs in `R`, see [SummarizeTEData_phased.R](SummarizeTEData_phased.R). We focused on identifying and summarizing complex repeats, where simple repeates were defined as those with an microsattelite repeate structure, e.g, Motif:(TAA)n, or tagged as A-rich, G-rich, GA-rich or rnd. Annotations were summarized within the chr8 SVs and specifically within 5000 bp of the identified SV breakpoints/bounds.
+We then summarized the identified TEs in `R`, see [SummarizeTEData_phased.R](SummarizeTEData_phased.R). We focused on identifying and summarizing complex repeats, where simple repeates were defined as those with an microsattelite repeate structure, e.g, Motif:(TAA)n, or tagged as A-rich, G-rich, GA-rich or rnd. Annotations were summarized within the chr8 SVs and specifically within 5000 bp of the identified SV breakpoints/bounds. 
+
+Additional summaries at the genome-level, which were used to generate nulls for the SV regions, are in [SummarizeTEData_phased_genomes.R](SummarizeTEData_phased_genomes.R).
 
 # Demographic inference
 
