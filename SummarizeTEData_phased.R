@@ -10,12 +10,25 @@
 
 
 ## bounds of region
-## h154
-## gs1 (inverted bit than rest) = 24457103,32202650 and 32202951,39030359
-## gus2 (inverted bit than rest) = 33112541,44121870 and 24803527,32951302
+## h154 
+## gs1 (rest then inverted bit) = 24457103,32202650 and 32202951,39030359
+## gus2 (rest then iverted bit) = 33112541,44121870 and 24803527,32951302
 ## refugio
 ## gs1 (inverted bit than rest) = 56898118,65729704 and 22442098,56898118
 ## gus1 (inverted bit than rest) = 22220178,31457192 and 31523304,65829835
+
+## function to test whether breakpoints are closer to TE than expected by chance, just using locus, seems reasonable
+
+TEdist<-function(gff=NA,pos=NA,types=NA){
+    dd<-NA
+    comp<-which(!types %in% c("SimpleRep","A-rich","G-rich","GA-rich","rnd"))
+    if(sum(pos >= gff$V4[comp] & pos <= gff$V5[comp])>0){ ## position is in a TE and is thus 0
+        dd<-0
+    } else{
+        dd<-min(abs(pos-c(gff$V4[comp],gff$V5[comp])))
+    }
+    return(dd)    
+}
 
 gff_h154_gs_h1<-read.table("t_crist_gs_hap_cen4119/HiRise/Hap1/final_assembly.fasta.out.gff", header=FALSE)
 gff_h154_gs_h2<-read.table("t_crist_gs_hap_cen4119/HiRise/Hap2/final_assembly.fasta.out.gff", header=FALSE)
@@ -71,6 +84,7 @@ loc_refug_gs<-ch8_refug_gs[li_refug_gs,]
 
 ########### H154 #####################
 
+
 ## totals
 sum(loc_h154_gus$V5-loc_h154_gus$V4)
 sum(loc_h154_gs$V5-loc_h154_gs$V4)
@@ -82,6 +96,72 @@ sum(loc_h154_gus$V5-loc_h154_gus$V4)/(h154_gus_ub-h154_gus_lb)
 sum(loc_h154_gs$V5-loc_h154_gs$V4)/(h154_gs_ub-h154_gs_lb)
 #[1] 0.5932954 = 59% repeat
 
+## null expectations for gus
+
+sz<-h154_gus_ub-h154_gus_lb
+obs<-sum(loc_h154_gus$V5-loc_h154_gus$V4)
+
+scafs<-unique(gff_h154_gus_h2$V1)
+
+sll<-read.table("/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_crist_gus_hap_cen4280/HiRise/Hap2/scafLengths2.txt",header=FALSE)
+
+lens<-sll[which(sll[,1] %in% scafs),2]
+chrs<-which(lens > sz)
+
+chn<-sample(x=chrs,size=1000,replace=T,prob=lens[chrs])
+u_chn<-unique(chn)
+
+null<-rep(NA,1000)
+xx<-1
+for(i in 1:length(u_chn)){
+	i_set<-grep(pattern=scafs[u_chn[i]],x=gff_h154_gus_h2$V1,fixed=TRUE)
+	i_gff<-gff_h154_gus_h2[i_set,]
+	for(k in 1:sum(chn==u_chn[i])){
+		lb<-sample(1:(lens[u_chn[i]]-sz),1)
+		ub<-lb+sz
+		i_reg<-which(i_gff$V4 >= lb & i_gff$V5 <= ub)
+		reg_gff<-i_gff[i_reg,]
+		null[xx]<-sum(reg_gff$V5-reg_gff$V4)
+		xx<-xx+1
+	}
+}
+mean(null >= obs)
+#[1] 0.141
+summary(null)/sz
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
+#  0.4859  0.5687  0.5938  0.5899  0.6147  0.6737
+
+
+## null expectations for gs
+sz<-h154_gs_ub-h154_gs_lb
+obs<-sum(loc_h154_gs$V5-loc_h154_gs$V4)
+
+scafs<-unique(gff_h154_gs_h1$V1)
+lens<-as.numeric(unlist(strsplit(scafs,split="_"))[seq(8,1768,8)])
+chrs<-which(lens > sz)
+
+chn<-sample(x=chrs,size=1000,replace=T,prob=lens[chrs])
+u_chn<-unique(chn)
+
+null<-rep(NA,1000)
+xx<-1
+for(i in 1:length(u_chn)){
+	i_set<-grep(pattern=scafs[u_chn[i]],x=gff_h154_gs_h1$V1,fixed=TRUE)
+	i_gff<-gff_h154_gs_h1[i_set,]
+	for(k in 1:sum(chn==u_chn[i])){
+		lb<-sample(1:(lens[u_chn[i]]-sz),1)
+		ub<-lb+sz
+		i_reg<-which(i_gff$V4 >= lb & i_gff$V5 <= ub)
+		reg_gff<-i_gff[i_reg,]
+		null[xx]<-sum(reg_gff$V5-reg_gff$V4)
+		xx<-xx+1
+	}
+}
+mean(null >= obs)
+#[1] 0.494
+summary(null)/sz
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
+# 0.4601  0.5606  0.5929  0.5867  0.6155  0.6714
 
 ## but what about types
 ## indexes for simple repeats
@@ -111,9 +191,16 @@ gus_types<-gsub(pattern="^Motif:",x=gus_types,perl=TRUE,replacement="",fixed=FAL
 gus_h154_sran_rep<-which(gus_types %in% c("SimpleRep","A-rich","G-rich","GA-rich","rnd"))
 gus_type_cnts<-tapply(X=loc_h154_gus$V5[-gus_h154_sran_rep]-loc_h154_gus$V4[-gus_h154_sran_rep],INDEX=gus_types[-gus_h154_sran_rep],sum)
 
+pdf("svSFX_tesums.pdf",width=9,height=9)
+par(mfrow=c(2,2))
+par(mar=c(4.5,8,3,1))
+cl<-1.4;ca<-1;cm<-1.4
 
-dotchart(gs_type_cnts, cex = 0.5) 
-dotchart(gus_type_cnts,cex=.5)
+dotchart(gus_type_cnts,cex=.5,,pch=19,xlab="Base pairs",cex.lab=cl,cex.axis=ca)
+title(main="(C) Hwy 154 green",cex.main=cm)
+dotchart(gs_type_cnts, cex = 0.5,pch=19,xlab="Base pairs",cex.lab=cl,cex.axis=ca) 
+title(main="(D) Hwy 154 striped",cex.main=cm)
+dev.off()
 ################################################## for main figure ##########
 pdf("TE.pdf",width=9,height=6)
 par(mfrow=c(2,3))
@@ -189,6 +276,16 @@ rdat[dat>ub] <- dat[dat>ub]-ub
 ## need to flip so this is "right" boundary not left and needs negative
 L_rdat_gs_h1[[3]]<--1 * rdat
 
+### null
+obs<-TEdist(gff=loc_h154_gs,pos=24457103,types=gs_types)
+# [1] 624
+poss<-sample(24457103:39030359,1000,replace=FALSE)
+null<-rep(NA,1000)
+for(k in 1:1000){
+	null[k]<-TEdist(gff=loc_h154_gs,pos=poss[k],types=gs_types)
+}
+mean(obs >= null)
+#[1] 0.285
 
 
 
@@ -224,6 +321,24 @@ rdat[dat >= lb & dat <=ub]<-0
 
 ## need to flip, still internal but needs negative
 L_rdat_gs_h1[[2]]<--1 * rdat
+### null
+obs1<-TEdist(gff=loc_h154_gs,pos=32202650,types=gs_types)
+# [1] 240 
+obs2<-TEdist(gff=loc_h154_gs,pos=32202951,types=gs_types)
+# [1] 0
+poss<-sample(24457103:39030359,1000,replace=FALSE)
+null<-rep(NA,1000)
+for(k in 1:1000){
+	null[k]<-TEdist(gff=loc_h154_gs,pos=poss[k],types=gs_types)
+}
+mean(obs1 >= null)
+#[1] 0.171
+mean(obs2 >= null)
+#[1] 0.075
+
+
+####
+
 
 lb<-39030359-pbuffer;ub<-39030359+pbuffer
 plot(c(lb,ub),c(0,1),type='n',xlab="Position (bps)",ylab="")
@@ -256,6 +371,20 @@ rdat[dat >= lb & dat <=ub]<-0
 ## need to flip, left not right and needs negative
 L_rdat_gs_h1[[1]]<--1 * rdat
 
+### null
+obs<-TEdist(gff=loc_h154_gs,pos=39030359,types=gs_types)
+# [1] 2539
+poss<-sample(24457103:39030359,1000,replace=FALSE)
+null<-rep(NA,1000)
+for(k in 1:1000){
+	null[k]<-TEdist(gff=loc_h154_gs,pos=poss[k],types=gs_types)
+}
+mean(obs >= null)
+#[1] 0.675
+
+summary(null)
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#    0.0   550.5  1583.5  2389.9  3304.0 19434.0 
 
 ## h154 gus h2
 L_rdat_gus_h2<-vector("list",3)
@@ -296,6 +425,17 @@ rdat[dat >= lb & dat <=ub]<-0
 ## need to flip, right not left and needs negative
 L_rdat_gus_h2[[3]]<--1 * rdat
 
+### null
+obs<-TEdist(gff=loc_h154_gus,pos=24803527,types=gus_types)
+# [1] 30
+poss<-sample(24803527:44121870,1000,replace=FALSE)
+null<-rep(NA,1000)
+for(k in 1:1000){
+	null[k]<-TEdist(gff=loc_h154_gus,pos=poss[k],types=gus_types)
+}
+mean(obs >= null)
+#[1] 0.156
+
 
 lb<-32951302-pbuffer;ub<-32951302+pbuffer
 plot(c(lb,ub),c(0,1),type='n',xlab="Position (bps)",ylab="")
@@ -329,6 +469,17 @@ rdat[dat >= lb & dat <=ub]<-0
 
 ## need to flip, still internal but needs negative
 L_rdat_gus_h2[[2]]<--1 * rdat
+
+### null
+obs<-TEdist(gff=loc_h154_gus,pos=32951302,types=gus_types)
+# [1] 2278
+poss<-sample(24803527:44121870,1000,replace=FALSE)
+null<-rep(NA,1000)
+for(k in 1:1000){
+	null[k]<-TEdist(gff=loc_h154_gus,pos=poss[k],types=gus_types)
+}
+mean(obs >= null)
+#[1] 0.652
 
 
 lb<-44121870-pbuffer;ub<-44121870+pbuffer
@@ -366,6 +517,16 @@ rdat[dat >= lb & dat <=ub]<-0
 ## need to flip, left not right and needs negative
 L_rdat_gus_h2[[1]]<--1 * rdat
 
+### null
+obs<-TEdist(gff=loc_h154_gus,pos=44121870,types=gus_types)
+# [1] 3801
+poss<-sample(24803527:44121870,1000,replace=FALSE)
+null<-rep(NA,1000)
+for(k in 1:1000){
+        null[k]<-TEdist(gff=loc_h154_gus,pos=poss[k],types=gus_types)
+}
+mean(obs >= null)
+# [1] 0.824
 
 
 ########### refugio #####################
@@ -381,6 +542,70 @@ sum(loc_refug_gus$V5-loc_refug_gus$V4)/(refug_gus_ub-refug_gus_lb)
 sum(loc_refug_gs$V5-loc_refug_gs$V4)/(refug_gs_ub-refug_gs_lb)
 #[1] 0.5982367 = 60% repeat
 
+## null for gus
+
+
+sz<-refug_gus_ub-refug_gus_lb
+obs<-sum(loc_refug_gus$V5-loc_refug_gus$V4)
+
+scafs<-unique(gff_refug_gus_h1$V1)
+lens<-as.numeric(unlist(strsplit(scafs,split="_"))[seq(8,24432,8)])
+chrs<-which(lens > sz) 
+
+chn<-sample(x=chrs,size=1000,replace=T,prob=lens[chrs])
+u_chn<-unique(chn)
+
+null<-rep(NA,1000)
+xx<-1
+for(i in 1:length(u_chn)){
+	i_set<-grep(pattern=scafs[u_chn[i]],x=gff_refug_gus_h1$V1,fixed=TRUE)
+	i_gff<-gff_refug_gus_h1[i_set,]
+	for(k in 1:sum(chn==u_chn[i])){
+		lb<-sample(1:(lens[u_chn[i]]-sz),1)
+		ub<-lb+sz
+		i_reg<-which(i_gff$V4 >= lb & i_gff$V5 <= ub)
+		reg_gff<-i_gff[i_reg,]
+		null[xx]<-sum(reg_gff$V5-reg_gff$V4)
+		xx<-xx+1
+	}
+}			
+mean(null >= obs)
+#[1] 0.36
+summary(null)/sz
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.5233  0.5702  0.5914  0.5882  0.6055  0.6519 
+
+## null for gs
+
+sz<-refug_gs_ub-refug_gs_lb
+obs<-sum(loc_refug_gs$V5-loc_refug_gs$V4)
+
+scafs<-unique(gff_refug_gs_h1$V1)
+lens<-as.numeric(unlist(strsplit(scafs,split="_"))[seq(8,5344,8)])
+chrs<-which(lens > sz) 
+
+chn<-sample(x=chrs,size=1000,replace=T,prob=lens[chrs])
+u_chn<-unique(chn)
+
+null<-rep(NA,1000)
+xx<-1
+for(i in 1:length(u_chn)){
+	i_set<-grep(pattern=scafs[u_chn[i]],x=gff_refug_gs_h1$V1,fixed=TRUE)
+	i_gff<-gff_refug_gs_h1[i_set,]
+	for(k in 1:sum(chn==u_chn[i])){
+		lb<-sample(1:(lens[u_chn[i]]-sz),1)
+		ub<-lb+sz
+		i_reg<-which(i_gff$V4 >= lb & i_gff$V5 <= ub)
+		reg_gff<-i_gff[i_reg,]
+		null[xx]<-sum(reg_gff$V5-reg_gff$V4)
+		xx<-xx+1
+	}
+}			
+mean(null >= obs)
+#[1] 0.355
+summary(null)/sz
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.5208  0.5757  0.5888  0.5904  0.6056  0.6482
 
 ## but what about types
 ## indexes for simple repeats
@@ -411,8 +636,16 @@ gus_types<-gsub(pattern="^Motif:",x=gus_types,perl=TRUE,replacement="",fixed=FAL
 gus_refug_sran_rep<-which(gus_types %in% c("SimpleRep","A-rich","G-rich","GA-rich","rnd"))
 gus_type_cnts<-tapply(X=loc_refug_gus$V5[-gus_refug_sran_rep]-loc_refug_gus$V4[-gus_refug_sran_rep],INDEX=gus_types[-gus_refug_sran_rep],sum)
 
-dotchart(gs_type_cnts, cex = 0.5) 
-dotchart(gus_type_cnts,cex=.5)
+pdf("svSFX_tesumsR.pdf",width=9,height=9)
+par(mfrow=c(2,2))
+par(mar=c(4.5,8,3,1))
+cl<-1.4;ca<-1;cm<-1.4
+
+dotchart(gus_type_cnts,cex=.5,,pch=19,xlab="Base pairs",cex.lab=cl,cex.axis=ca)
+title(main="(A) Refugio green",cex.main=cm)
+dotchart(gs_type_cnts, cex = 0.5,pch=19,xlab="Base pairs",cex.lab=cl,cex.axis=ca)
+title(main="(B) Refugio striped",cex.main=cm)
+dev.off()
 
 
 
@@ -457,6 +690,16 @@ rdat[dat >= lb & dat <=ub]<-0
 ## good as is
 L_rdat_gs_r1[[1]]<-rdat
 
+### null
+obs<-TEdist(gff=loc_refug_gs,pos=22442098,types=gs_types)
+# [1] 0
+poss<-sample(22442098:65729704,1000,replace=FALSE)
+null<-rep(NA,1000)
+for(k in 1:1000){
+        null[k]<-TEdist(gff=loc_refug_gs,pos=poss[k],types=gs_types)
+}
+mean(obs >= null)
+# [1] 0.112
 
 lb<-56898118-pbuffer;ub<-56898118+pbuffer
 plot(c(lb,ub),c(0,1),type='n',xlab="Position (bps)",ylab="")
@@ -490,6 +733,17 @@ rdat[dat >= lb & dat <=ub]<-0
 ## good as is
 L_rdat_gs_r1[[2]]<-rdat
 
+### null
+obs<-TEdist(gff=loc_refug_gs,pos=56898118,types=gs_types)
+# [1] 1837
+poss<-sample(22442098:65729704,1000,replace=FALSE)
+null<-rep(NA,1000)
+for(k in 1:1000){
+        null[k]<-TEdist(gff=loc_refug_gs,pos=poss[k],types=gs_types)
+}
+mean(obs >= null)
+# [1] 0.589
+
 lb<-65729704-pbuffer;ub<-65729704+pbuffer
 plot(c(lb,ub),c(0,1),type='n',xlab="Position (bps)",ylab="")
 xxi<-which(loc_refug_gs$V4 < ub & loc_refug_gs$V5 > lb)
@@ -522,6 +776,17 @@ rdat[dat >= lb & dat <=ub]<-0
 
 ## good as is
 L_rdat_gs_r1[[3]]<-rdat
+
+### null
+obs<-TEdist(gff=loc_refug_gs,pos=65729704,types=gs_types)
+# [1] 723
+poss<-sample(22442098:65729704,1000,replace=FALSE)
+null<-rep(NA,1000)
+for(k in 1:1000){
+        null[k]<-TEdist(gff=loc_refug_gs,pos=poss[k],types=gs_types)
+}
+mean(obs >= null)
+# [1] 0.34
 
 ## refug gus h1
 genes_refug_gus_h1<-read.table("Annotation/t_crist_refug_green_h1/braker/braker.gff3",header=FALSE,fill=TRUE,comment.char="#")
@@ -562,6 +827,16 @@ rdat[dat >= lb & dat <=ub]<-0
 ## good as is
 L_rdat_gus_r1[[1]]<-rdat
 
+### null
+obs<-TEdist(gff=loc_refug_gus,pos=22220178,types=gus_types)
+# [1] 0
+poss<-sample(22220178:65829835,1000,replace=FALSE)
+null<-rep(NA,1000)
+for(k in 1:1000){
+        null[k]<-TEdist(gff=loc_refug_gus,pos=poss[k],types=gus_types)
+}
+mean(obs >= null)
+# [1] 0.112
 
 
 lb<-31457192-pbuffer;ub<-31523304+pbuffer
@@ -599,6 +874,20 @@ rdat[dat >= lb & dat <=ub]<-0
 ## good as is
 L_rdat_gus_r1[[2]]<-rdat
 
+### null
+obs1<-TEdist(gff=loc_refug_gus,pos=31457192,types=gus_types)
+# 8710
+obs2<-TEdist(gff=loc_refug_gus,pos=31523304,types=gus_types)
+# 0
+poss<-sample(22220178:65829835,1000,replace=FALSE)
+null<-rep(NA,1000)
+for(k in 1:1000){
+        null[k]<-TEdist(gff=loc_refug_gus,pos=poss[k],types=gus_types)
+}
+mean(obs1 >= null)
+# [1] 0.967
+mean(obs2 >= null)
+# [1] 0.114
 
 lb<-65829835-pbuffer;ub<-65829835+pbuffer
 plot(c(lb,ub),c(0,1),type='n',xlab="Position (bps)",ylab="")
@@ -633,7 +922,21 @@ rdat[dat>ub] <- dat[dat>ub]-ub
 rdat[dat >= lb & dat <=ub]<-0
 
 ## good as is
-L_rdat_gus_r1[[3]]<-rdat
+L_rdat_gus_### null
+
+## null
+obs<-TEdist(gff=loc_refug_gus,pos=65829835,types=gus_types)
+# [1] 341
+poss<-sample(22220178:65829835,1000,replace=FALSE)
+null<-rep(NA,1000)
+for(k in 1:1000){
+        null[k]<-TEdist(gff=loc_refug_gus,pos=poss[k],types=gus_types)
+}
+mean(obs >= null)
+# [1] 0.242
+
+
+r1[[3]]<-rdat
 
 save(list=ls(),file="TE.rdat")
 ################################################## for main figure, version 2 ##########
